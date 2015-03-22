@@ -118,12 +118,11 @@ class Game(object):
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False)
         Alien.image = pygame.image.load(
-            'data/graphics/Spaceship16.png').convert()
-        Alien.image.set_colorkey(WHITE)
-        self.ani_pos = 5  # 11 images of ship leaning from left to right. 5th image is 'central'
-        self.ship_sheet = pygame.image.load(
-            'data/graphics/ship_sheet_final.png').convert_alpha()
-        Player.image = self.ship_sheet.subsurface(self.ani_pos * 64, 0, 64, 61)
+            'data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
+        Alien.image.set_colorkey(WHITE)        
+        #self.ship_sheet = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
+        #Player.image = self.ship_sheet.subsurface(64, 0, 64, 61)
+        Player.image = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
         self.animate_right = False
         self.animate_left = False
         self.explosion_sheet = pygame.image.load(
@@ -190,25 +189,6 @@ class Game(object):
                 GameState.shoot_bullet = True
                 self.bullet_fx.play()
 
-    def animate_player(self):
-        if self.animate_right:
-            if self.ani_pos < 10:
-                Player.image = self.ship_sheet.subsurface(self.ani_pos * 64, 0, 64, 61)
-                self.ani_pos += 1
-        else:
-            if self.ani_pos > 5:
-                self.ani_pos -= 1
-                Player.image = self.ship_sheet.subsurface(self.ani_pos * 64, 0, 64, 61)
-
-        if self.animate_left:
-            if self.ani_pos > 0:
-                self.ani_pos -= 1
-                Player.image = self.ship_sheet.subsurface(self.ani_pos * 64, 0, 64, 61)
-        else:
-            if self.ani_pos < 5:
-                Player.image = self.ship_sheet.subsurface(self.ani_pos * 64, 0, 64, 61)
-                self.ani_pos += 1
-
     def player_explosion(self):
         if self.explode:
             if self.explode_pos < 8:
@@ -251,7 +231,6 @@ class Game(object):
 
     def refresh_screen(self):
         self.all_sprite_list.draw(self.screen)
-        self.animate_player()
         self.player_explosion()
         self.alien_explosion()
         self.refresh_scores()
