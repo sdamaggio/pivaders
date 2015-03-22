@@ -120,8 +120,6 @@ class Game(object):
         Alien.image = pygame.image.load(
             'data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
         Alien.image.set_colorkey(WHITE)        
-        #self.ship_sheet = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
-        #Player.image = self.ship_sheet.subsurface(64, 0, 64, 61)
         Player.image = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
         self.animate_right = False
         self.animate_left = False
@@ -139,9 +137,9 @@ class Game(object):
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.7)
         self.bullet_fx = pygame.mixer.Sound(
-            'data/sound/medetix__pc-bitcrushed-lazer-beam.ogg')
+            'data/sound/shoot.wav')
         self.explosion_fx = pygame.mixer.Sound(
-            'data/sound/timgormly__8-bit-explosion.ogg')
+            'data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
         GameState.end_game = False
