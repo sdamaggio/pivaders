@@ -23,38 +23,25 @@ import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 
 # Joystick:
+# RIGHT         gpio27  pin 13	move right
+# LEFT          gpio18  pin 12	move left
+# GREN BUTTON	gpio23  pin 16 	shoot
+# BLUE BUTTON	gpio24	pin 18	Esc
+# GND           pin 11, 14, 6
+
+# unused
 # UP            gpio22  pin 15
 # DOWN          gpio17  pin 11
-# RIGHT         gpio27  pin 13
-# LEFT          gpio18  pin 12
-# BUTTON1       gpio23  pin 16
-# GND           pin 11, 14
 
-GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+pinRight = 27
+pinLeft = 18
+pinShoot = 23
+pinEsc = 24
 
-# now we'll define the threaded callback function
-# this will run in another thread when our event is detected    
-def callbackRIGHT(channel):
-    global rightPressed
-    rightPressed = True
-
-def callbackLEFT(channel):
-    global leftPressed
-    leftPressed = True
-
-def callbackBUTTON1(channel):
-    print "SHOOT\n"
-
-# The GPIO.add_event_detect() line below set things up so that
-# when a rising edge is detected on the pin, regardless of whatever
-# else is happening in the program, the function "callbackXXXX" will be run
-# It will happen even while the program is waiting for
-# a falling edge on the other button.
-GPIO.add_event_detect(27, GPIO.FALLING, callback=callbackRIGHT, bouncetime=300)
-GPIO.add_event_detect(18, GPIO.FALLING, callback=callbackLEFT, bouncetime=300)
-GPIO.add_event_detect(23, GPIO.FALLING, callback=callbackBUTTON1, bouncetime=300)
+GPIO.setup(pinRight, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinLeft, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinShoot, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinEsc, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -192,8 +179,14 @@ class Game(object):
             if event.type == pygame.QUIT:
                 GameState.start_screen = False
                 GameState.end_game = True
-            if event.type == pygame.KEYDOWN \
-                    and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if GameState.start_screen:
+                    GameState.start_screen = False
+                    GameState.end_game = True
+                    self.kill_all()
+                else:
+                    GameState.start_screen = True
+            if GPIO.input(pinEsc) == 0:
                 if GameState.start_screen:
                     GameState.start_screen = False
                     GameState.end_game = True
@@ -203,31 +196,21 @@ class Game(object):
         self.keys = pygame.key.get_pressed()
 	global leftPressed
 	global rightPressed
-	if self.keys[pygame.K_LEFT]:
+	if self.keys[pygame.K_LEFT] or GPIO.input(pinLeft) == 0:
             GameState.vector = -1
             self.animate_left = True
             self.animate_right = False            
-        elif self.keys[pygame.K_RIGHT]:
+        elif self.keys[pygame.K_RIGHT] or GPIO.input(pinRight) == 0:
             GameState.vector = 1
             self.animate_right = True
             self.animate_left = False
-	elif leftPressed:
-            GameState.vector = -1
-            self.animate_left = True
-            self.animate_right = False
-            leftPressed = False
-        elif  rightPressed:
-            GameState.vector = 1
-            self.animate_right = True
-            self.animate_left = False
-            rightPressed = False
 
-        else:
+	else:
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
 
-        if self.keys[pygame.K_SPACE]:
+        if self.keys[pygame.K_SPACE] or GPIO.input(pinShoot) == 0:
             if GameState.start_screen:
                 GameState.start_screen = False
                 self.lives = 2
