@@ -18,6 +18,14 @@ RES = (800, 600)
 rightPressed = False
 leftPressed = False
 
+
+# add this in /boot/config.txt (remove first # on every row)
+#
+# # uncomment to force a specific HDMI mode (this will force VGA)
+# hdmi_group=2
+# hdmi_mode=8
+
+
 # http://raspi.tv/how-to-use-interrupts-with-python-on-the-raspberry-pi-and-rpi-gpio-part-2
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
@@ -128,7 +136,7 @@ class Game(object):
             'data/Orbitracer.ttf', 28)
         self.intro_font = pygame.font.Font(
             'data/Orbitracer.ttf', 72)
-        self.screen = pygame.display.set_mode([RES[0], RES[1]])
+        self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
         self.rounds_won = 0
