@@ -13,8 +13,6 @@ BARRIER_COLUMN = 4
 BULLET_SIZE = (5, 10)
 MISSILE_SIZE = (5, 5)
 BLOCK_SIZE = (10, 10)
-DEFENCE_SIZE = (20, 13)
-DEFENCE_PATTERN = [[00001111111111110000],[00011111111111111000],[00111111111111111100],[01111111111111111110],[11111111111111111111],[11111111111111111111],[11111111111111111111],[11111111111111111111],[11111110000001111111],[11111100000000111111],[11111000000000011111],[11110000000000001111],[11110000000000001111]]
 RES = (800, 600)
 
 rightPressed = False
@@ -47,15 +45,6 @@ GPIO.setup(pinRight, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinLeft, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinShoot, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinEsc, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-# TODO
-# add moving aliens
-# add hud
-# add god mode code screen
-# add god mode
-# add standby screen
-
-
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -208,31 +197,31 @@ class Game(object):
                 else:
                     GameState.start_screen = True
         self.keys = pygame.key.get_pressed()
-    if self.keys[pygame.K_LEFT] or GPIO.input(pinLeft) == 0:
-		GameState.vector = -1
-		self.animate_left = True
-		self.animate_right = False            
-    elif self.keys[pygame.K_RIGHT] or GPIO.input(pinRight) == 0:
-		GameState.vector = 1
-		self.animate_right = True
-		self.animate_left = False
+	if self.keys[pygame.K_LEFT] or GPIO.input(pinLeft) == 0:
+            GameState.vector = -1
+            self.animate_left = True
+            self.animate_right = False            
+        elif self.keys[pygame.K_RIGHT] or GPIO.input(pinRight) == 0:
+            GameState.vector = 1
+            self.animate_right = True
+            self.animate_left = False
 
-    else:
+	else:
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
 
-	if self.keys[pygame.K_SPACE] or GPIO.input(pinShoot) == 0 or GPIO.input(pinUp) == 0:
-		if GameState.start_screen:
-			GameState.start_screen = False
-			self.lives = 2
-			self.score = 0
-			self.make_player()
-			self.make_defenses()
-			self.alien_wave(0)
-		else:
-			GameState.shoot_bullet = True
-			self.bullet_fx.play()
+        if self.keys[pygame.K_SPACE] or GPIO.input(pinShoot) == 0 or GPIO.input(pinUp) == 0:
+            if GameState.start_screen:
+                GameState.start_screen = False
+                self.lives = 2
+                self.score = 0
+                self.make_player()
+                self.make_defenses()
+                self.alien_wave(0)
+            else:
+                GameState.shoot_bullet = True
+                self.bullet_fx.play()
 
     def player_explosion(self):
         if self.explode:
@@ -330,7 +319,7 @@ class Game(object):
     def make_barrier(self, columns, rows, spacer):
         for column in range(columns):
             for row in range(rows):
-                barrier = Block(WHITE, (5, 5))
+                barrier = Block(WHITE, (BLOCK_SIZE))
                 barrier.rect.x = 55 + (200 * spacer) + (row * 10)
                 barrier.rect.y = 450 + (column * 10)
                 self.barrier_group.add(barrier)
@@ -338,7 +327,7 @@ class Game(object):
 
     def make_defenses(self):
         for spacing, spacing in enumerate(xrange(4)):
-            self.make_barrier(DEFENCE_SIZE, spacing)
+            self.make_barrier(3, 9, spacing)
 
     def kill_all(self):
         for items in [self.bullet_group, self.player_group,
