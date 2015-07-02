@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-import pygame, random
+import pygame, random, time
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
@@ -46,6 +46,7 @@ pinRight = 27
 pinLeft = 18
 pinShoot = 23
 pinEsc = 24
+pinWiringSolved = 0
 
 #GPIO pin setup
 GPIO.setup(pinUp, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -53,6 +54,7 @@ GPIO.setup(pinRight, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinLeft, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinShoot, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinEsc, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinWiringSolved, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -132,40 +134,41 @@ class Game(object):
         pygame.init()
         pygame.font.init()
         self.clock = pygame.time.Clock()
-        self.game_font = pygame.font.Font(
-            'data/Orbitracer.ttf', 28)
-        self.intro_font = pygame.font.Font(
-            'data/Orbitracer.ttf', 72)
+        
+        self.game_font = pygame.font.Font('data/Orbitracer.ttf', 28)
+        self.intro_font = pygame.font.Font('data/Orbitracer.ttf', 72)
+        
         self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
+        
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
         self.rounds_won = 0
         self.level_up = 50
         self.score = 0
         self.lives = 2
+        
         self.player_group = pygame.sprite.Group()
         self.alien_group = pygame.sprite.Group()
         self.bullet_group = pygame.sprite.Group()
         self.missile_group = pygame.sprite.Group()
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
-        self.intro_screen = pygame.image.load(
-            'data/graphics/start_screen.jpg').convert()
-        self.background = pygame.image.load(
-            'data/graphics/Space-Background.jpg').convert()
+        
+        #load images and sounds
+        self.sys_overheat0 = pygame.image.load('data/graphics/system_overheating_0.png').convert_alpha()
+        self.sys_overheat1 = pygame.image.load('data/graphics/system_overheating_1.png').convert_alpha()
+        self.intro_screen = pygame.image.load('data/graphics/start_screen.jpg').convert()
+        self.background = pygame.image.load('data/graphics/Space-Background.jpg').convert()
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False)
-        Alien.image = pygame.image.load(
-            'data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
+        Alien.image = pygame.image.load('data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
         Alien.image.set_colorkey(WHITE)        
         Player.image = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
         self.animate_right = False
         self.animate_left = False
-        self.explosion_sheet = pygame.image.load(
-            'data/graphics/explosion_new1.png').convert_alpha()
+        self.explosion_sheet = pygame.image.load('data/graphics/explosion_new1.png').convert_alpha()
         self.explosion_image = self.explosion_sheet.subsurface(0, 0, 79, 96)
-        self.alien_explosion_sheet = pygame.image.load(
-            'data/graphics/alien_explosion.png')
+        self.alien_explosion_sheet = pygame.image.load('data/graphics/alien_explosion.png')
         self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(0, 0, 94, 96)
         self.explode = False
         self.explode_pos = 0
@@ -174,10 +177,8 @@ class Game(object):
         pygame.mixer.music.load('data/sound/10_Arpanauts.ogg')
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.7)
-        self.bullet_fx = pygame.mixer.Sound(
-            'data/sound/shoot.wav')
-        self.explosion_fx = pygame.mixer.Sound(
-            'data/sound/invaderkilled.wav')
+        self.bullet_fx = pygame.mixer.Sound('data/sound/shoot.wav')
+        self.explosion_fx = pygame.mixer.Sound('data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
         GameState.end_game = False
@@ -254,14 +255,22 @@ class Game(object):
                 self.alien_explode_pos = 0
                 self.explodey_alien = []
 
-    def splash_screen(self):
+    def splash_screen(self):    
+        # TODO: remove counter and replace for with "while GPIO.input(pinLeft) != 0:"
+        for count in range(0,5):
+            self.screen.blit(self.sys_overheat0, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.screen.blit(self.sys_overheat1, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.control()
+            
         while GameState.start_screen:
-            self.kill_all()
+            self.kill_all()            
             self.screen.blit(self.intro_screen, [0, 0])
-            #self.screen.blit(self.intro_font.render(
-            #    "PIVADERS", 1, WHITE), (265, 120))
-            #self.screen.blit(self.game_font.render(
-            #    "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
+            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
+            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             pygame.display.flip()
             self.control()
             self.clock.tick(self.refresh_rate / 2)
@@ -281,19 +290,15 @@ class Game(object):
         self.clock.tick(self.refresh_rate)
 
     def refresh_scores(self):
-        self.screen.blit(self.game_font.render(
-            "SCORE " + str(self.score), 1, WHITE), (10, 8))
-        self.screen.blit(self.game_font.render(
-            "LIVES " + str(self.lives + 1), 1, RED), (355, 575))
+        self.screen.blit(self.game_font.render("SCORE " + str(self.score), 1, WHITE), (10, 8))
+        self.screen.blit(self.game_font.render("LIVES " + str(self.lives + 1), 1, RED), (355, 575))
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
             for row in range(BARRIER_ROW):
                 alien = Alien()
-                alien.rect.y = 65 + (column * (
-                    ALIEN_SIZE[1] + ALIEN_SPACER))
-                alien.rect.x = ALIEN_SPACER + (
-                    row * (ALIEN_SIZE[0] + ALIEN_SPACER))
+                alien.rect.y = 65 + (column * (ALIEN_SIZE[1] + ALIEN_SPACER))
+                alien.rect.x = ALIEN_SPACER + (row * (ALIEN_SIZE[0] + ALIEN_SPACER))
                 self.alien_group.add(alien)
                 self.all_sprite_list.add(alien)
                 alien.speed -= speed
@@ -345,9 +350,7 @@ class Game(object):
 
     def is_dead(self):
         if self.lives < 0:
-            self.screen.blit(self.game_font.render(
-                "The war is lost! You scored: " + str(
-                    self.score), 1, RED), (250, 15))
+            self.screen.blit(self.game_font.render("The war is lost! You scored: " + str(self.score), 1, RED), (250, 15))
             self.rounds_won = 0
             self.refresh_screen()
             self.level_up = 50
@@ -359,9 +362,7 @@ class Game(object):
     def defenses_breached(self):
         for alien in self.alien_group:
             if alien.rect.y > 410:
-                self.screen.blit(self.game_font.render(
-                    "The aliens have breached Earth defenses!",
-                    1, RED), (180, 15))
+                self.screen.blit(self.game_font.render("The aliens have breached Earth defenses!", 1, RED), (180, 15))
                 self.refresh_screen()
                 self.level_up = 50
                 self.explode = False
@@ -372,9 +373,7 @@ class Game(object):
     def win_round(self):
         if len(self.alien_group) < 1:
             self.rounds_won += 1
-            self.screen.blit(self.game_font.render(
-                "You won round " + str(self.rounds_won) +
-                "  but the battle rages on", 1, RED), (200, 15))
+            self.screen.blit(self.game_font.render("You won round " + str(self.rounds_won) + "  but the battle rages on", 1, RED), (200, 15))
             self.refresh_screen()
             pygame.time.delay(3000)
             return True
@@ -391,13 +390,10 @@ class Game(object):
         self.level_up += 50
 
     def calc_collisions(self):
-        pygame.sprite.groupcollide(
-            self.missile_group, self.barrier_group, True, True)
-        pygame.sprite.groupcollide(
-            self.bullet_group, self.barrier_group, True, True)
+        pygame.sprite.groupcollide(self.missile_group, self.barrier_group, True, True)
+        pygame.sprite.groupcollide(self.bullet_group, self.barrier_group, True, True)
 
-        for z in pygame.sprite.groupcollide(
-                self.bullet_group, self.alien_group, True, True):
+        for z in pygame.sprite.groupcollide(self.bullet_group, self.alien_group, True, True):
             self.alien_explode = True
             self.explodey_alien.append(z.rect.x)
             self.explodey_alien.append(z.rect.y)
@@ -421,8 +417,7 @@ class Game(object):
                 self.refresh_screen()
                 if self.is_dead() or self.defenses_breached():
                     GameState.start_screen = True
-                for actor in [self.player_group, self.bullet_group,
-                              self.alien_group, self.missile_group]:
+                for actor in [self.player_group, self.bullet_group, self.alien_group, self.missile_group]:
                     for i in actor:
                         i.update()
                 if GameState.shoot_bullet:
