@@ -73,7 +73,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 520
         self.travel = 7
-        self.speed = 350
+        self.speed = 150 # TODO: default 350 or maybe more, 150 for god mode 
         self.time = pygame.time.get_ticks()
 
     def update(self):
@@ -196,7 +196,7 @@ class Game(object):
         GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
-        GameState.god_mode = True
+        GameState.god_mode = False
 
     def control(self):
         for event in pygame.event.get():
@@ -332,29 +332,42 @@ class Game(object):
                 self.all_sprite_list.add(bullet)
                 self.player.time = GameState.game_time
             else:	
-                for cont in range(0, 1):
+                for cont in range(0, 11):
                     bullet = Ammo(YELLOW, BULLET_SIZE)
                     bullet.vector = -1
-                    bullet.speed = 26
-                    #if cont == 0:
-                    #	bullet.rect.x = self.player.rect.x + 29 + 10
-                    #	bullet.speed = 40
-                    #if cont == 1:
-                    #	bullet.rect.x = self.player.rect.x + 29 - 20
-                    #	bullet.speed = 20
-                    #if cont == 2:
-                    #	bullet.rect.x = self.player.rect.x + 29 -20
-                    #	bullet.speed = 30
-                    #if cont == 3:
-                    #	bullet.rect.x = self.player.rect.x + 29 + 20
-                    #	bullet.speed = 35					
-                    
+                    bullet.speed = 26                  
 
-                    if cont == 0:
-                        bullet.rect.x = self.player.rect.x + 29 			
+                    #if cont == 0:
+                    #    bullet.rect.x = self.player.rect.x + 29 - 6
+                    #    bullet.rect.y = self.player.rect.y - 80			
                     #if cont == 1:
-                    #    bullet.rect.x = self.player.rect.x + 28				
-                    bullet.rect.y = self.player.rect.y 						
+                    #    bullet.rect.x = self.player.rect.x + 29 + 6				
+                    #    bullet.rect.y = self.player.rect.y - 80
+                    if cont == 2:
+                        bullet.rect.x = self.player.rect.x + 29 - 6
+                        bullet.rect.y = self.player.rect.y - 40        
+                    if cont == 3:
+                        bullet.rect.x = self.player.rect.x + 29 + 6          
+                        bullet.rect.y = self.player.rect.y - 20
+                    if cont == 4:
+                        bullet.rect.x = self.player.rect.x + 29 - 6            
+                        bullet.rect.y = self.player.rect.y 
+                    if cont == 5:
+                        bullet.rect.x = self.player.rect.x + 29 + 6         
+                        bullet.rect.y = self.player.rect.y + 20
+                    #if cont == 6:
+                    #    bullet.rect.x = self.player.rect.x + 29 - 6          
+                    #    bullet.rect.y = self.player.rect.y + 40
+                    #if cont == 7:
+                    #    bullet.rect.x = self.player.rect.x + 29 + 6        
+                    #    bullet.rect.y = self.player.rect.y + 40
+                    #if cont == 8:
+                    #    bullet.rect.x = self.player.rect.x + 29 - 6          
+                    #    bullet.rect.y = self.player.rect.y + 80
+                    #if cont == 9:
+                    #    bullet.rect.x = self.player.rect.x + 29 + 6      
+                    #    bullet.rect.y = self.player.rect.y + 80
+
                     self.bullet_group.add(bullet)
                     self.all_sprite_list.add(bullet)
                     self.player.time = GameState.game_time
