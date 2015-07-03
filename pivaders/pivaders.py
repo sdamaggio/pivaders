@@ -1,11 +1,20 @@
 #!/usr/bin/env python2
 
+# TODO:
+# change spaceship color when gode mode is on
+# and add volume to sound
+#
+#
+#
+
+
 import pygame, random, time
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
 ALIEN_SIZE = (30, 40)
 ALIEN_SPACER = 20
 BARRIER_ROW = 10
@@ -181,10 +190,13 @@ class Game(object):
         self.explosion_fx = pygame.mixer.Sound('data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
+        
+        # initialize GameState vars
         GameState.end_game = False
         GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
+        GameState.god_mode = True
 
     def control(self):
         for event in pygame.event.get():
@@ -206,20 +218,25 @@ class Game(object):
                 else:
                     GameState.start_screen = True
         self.keys = pygame.key.get_pressed()
-	if self.keys[pygame.K_LEFT] or GPIO.input(pinLeft) == 0:
-            GameState.vector = -1
+        if self.keys[pygame.K_LEFT] or GPIO.input(pinLeft) == 0:
             self.animate_left = True
-            self.animate_right = False            
+            self.animate_right = False
+            if GameState.god_mode == False:
+                GameState.vector = -1
+            else:
+                GameState.vector = -2                    
         elif self.keys[pygame.K_RIGHT] or GPIO.input(pinRight) == 0:
-            GameState.vector = 1
             self.animate_right = True
             self.animate_left = False
+            if GameState.god_mode == False:
+                GameState.vector = 1
+            else:
+                GameState.vector = 2 
 
-	else:
+        else:
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
-
         if self.keys[pygame.K_SPACE] or GPIO.input(pinShoot) == 0 or GPIO.input(pinUp) == 0:
             if GameState.start_screen:
                 GameState.start_screen = False
@@ -240,7 +257,7 @@ class Game(object):
                 self.screen.blit(self.explosion_image, [self.player.rect.x - 10, self.player.rect.y - 30])
             else:
                 self.explode = False
-                self.explode_pos = 0
+                self.explode_pos = 0	
 
     def alien_explosion(self):
         if self.alien_explode:
@@ -257,23 +274,23 @@ class Game(object):
 
     def splash_screen(self):    
         # TODO: remove counter and replace for with "while GPIO.input(pinLeft) != 0:"
-        for count in range(0,5):
-            self.screen.blit(self.sys_overheat0, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.screen.blit(self.sys_overheat1, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.control()
+        #for count in range(0,5):
+        #    self.screen.blit(self.sys_overheat0, [0, 0])
+        #    pygame.display.flip()
+        #    time.sleep(1.0)
+        #    self.screen.blit(self.sys_overheat1, [0, 0])
+        #    pygame.display.flip()
+        #    time.sleep(1.0)
+        #    self.control()
             
         while GameState.start_screen:
-            self.kill_all()            
-            self.screen.blit(self.intro_screen, [0, 0])
-            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
-            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-            pygame.display.flip()
-            self.control()
-            self.clock.tick(self.refresh_rate / 2)
+			self.kill_all()            
+			self.screen.blit(self.intro_screen, [0, 0])
+			#self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
+			#self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
+			pygame.display.flip()
+			self.control()
+			self.clock.tick(self.refresh_rate / 2)		
 
     def make_player(self):
         self.player = Player()
@@ -305,14 +322,42 @@ class Game(object):
 
     def make_bullet(self):
         if GameState.game_time - self.player.time > self.player.speed:
-            bullet = Ammo(BLUE, BULLET_SIZE)
-            bullet.vector = -1
-            bullet.speed = 26
-            bullet.rect.x = self.player.rect.x + 28
-            bullet.rect.y = self.player.rect.y
-            self.bullet_group.add(bullet)
-            self.all_sprite_list.add(bullet)
-            self.player.time = GameState.game_time
+            if GameState.god_mode == False:
+                bullet = Ammo(BLUE, BULLET_SIZE)
+                bullet.vector = -1
+                bullet.speed = 13
+                bullet.rect.x = self.player.rect.x + 28
+                bullet.rect.y = self.player.rect.y
+                self.bullet_group.add(bullet)
+                self.all_sprite_list.add(bullet)
+                self.player.time = GameState.game_time
+            else:	
+                for cont in range(0, 1):
+                    bullet = Ammo(YELLOW, BULLET_SIZE)
+                    bullet.vector = -1
+                    bullet.speed = 26
+                    #if cont == 0:
+                    #	bullet.rect.x = self.player.rect.x + 29 + 10
+                    #	bullet.speed = 40
+                    #if cont == 1:
+                    #	bullet.rect.x = self.player.rect.x + 29 - 20
+                    #	bullet.speed = 20
+                    #if cont == 2:
+                    #	bullet.rect.x = self.player.rect.x + 29 -20
+                    #	bullet.speed = 30
+                    #if cont == 3:
+                    #	bullet.rect.x = self.player.rect.x + 29 + 20
+                    #	bullet.speed = 35					
+                    
+
+                    if cont == 0:
+                        bullet.rect.x = self.player.rect.x + 29 			
+                    #if cont == 1:
+                    #    bullet.rect.x = self.player.rect.x + 28				
+                    bullet.rect.y = self.player.rect.y 						
+                    self.bullet_group.add(bullet)
+                    self.all_sprite_list.add(bullet)
+                    self.player.time = GameState.game_time
         GameState.shoot_bullet = False
 
     def make_missile(self):
