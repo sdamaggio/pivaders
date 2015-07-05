@@ -73,10 +73,13 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 520
         self.travel = 7
-        self.speed = 150 # TODO: default 350 or maybe more, 150 for god mode 
+        self.speed = 1000 # NOTE: default 1000, 150 for god mode 
         self.time = pygame.time.get_ticks()
 
     def update(self):
+        if GameState.god_mode == True:
+            self.speed = 150;
+            self.lives = 98;
         self.rect.x += GameState.vector * self.travel
         if self.rect.x < 0:
             self.rect.x = 0
@@ -376,14 +379,14 @@ class Game(object):
     def make_missile(self):
         if len(self.alien_group):
             shoot = random.random()
-            if shoot <= 0.05:
+            if shoot <= 0.25: # def: 0.05
                 shooter = random.choice([
                     alien for alien in self.alien_group])
                 missile = Ammo(RED, MISSILE_SIZE)
                 missile.vector = 1
                 missile.rect.x = shooter.rect.x + 15
                 missile.rect.y = shooter.rect.y + 40
-                missile.speed = 10
+                missile.speed = 18 # def: 10
                 self.missile_group.add(missile)
                 self.all_sprite_list.add(missile)
 
@@ -439,8 +442,7 @@ class Game(object):
     def next_round(self):
         self.explode = False
         self.alien_explode = False
-        for actor in [self.missile_group,
-                      self.barrier_group, self.bullet_group]:
+        for actor in [self.missile_group, self.barrier_group, self.bullet_group]:
             for i in actor:
                 i.kill()
         self.alien_wave(self.level_up)
