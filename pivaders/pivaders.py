@@ -199,7 +199,7 @@ class Game(object):
         GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
-        GameState.god_mode = False
+        GameState.god_mode = True
 
     def control(self):
         for event in pygame.event.get():
@@ -275,25 +275,28 @@ class Game(object):
                 self.alien_explode_pos = 0
                 self.explodey_alien = []
 
-    def splash_screen(self):    
-        # TODO: remove counter and replace for with "while GPIO.input(pinLeft) != 0:"
-        #for count in range(0,5):
-        #    self.screen.blit(self.sys_overheat0, [0, 0])
-        #    pygame.display.flip()
-        #    time.sleep(1.0)
-        #    self.screen.blit(self.sys_overheat1, [0, 0])
-        #    pygame.display.flip()
-        #    time.sleep(1.0)
-        #    self.control()
-            
+    def splash_screen(self): 
+#        self.overheat_screen() 
         while GameState.start_screen:
-			self.kill_all()            
-			self.screen.blit(self.intro_screen, [0, 0])
-			#self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
-			#self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-			pygame.display.flip()
-			self.control()
-			self.clock.tick(self.refresh_rate / 2)		
+            self.kill_all()            
+            self.screen.blit(self.intro_screen, [0, 0])
+            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
+            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
+            self.screen.blit(self.game_font.render("INSERT COINS TO PLAY", 1, WHITE), (274, 500))
+            pygame.display.flip()
+            self.control()
+            self.clock.tick(self.refresh_rate / 2)	
+
+    def overheat_screen(self):
+        # TODO: remove counter and replace for with "while GPIO.input(pinOverheatSolved) != 0:"
+        for count in range(0,5):
+            self.screen.blit(self.sys_overheat0, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.screen.blit(self.sys_overheat1, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.control()
 
     def make_player(self):
         self.player = Player()
