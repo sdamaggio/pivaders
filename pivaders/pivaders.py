@@ -1,20 +1,11 @@
 #!/usr/bin/env python2
 
-# TODO:
-# change spaceship color when gode mode is on
-# and add volume to sound
-#
-#
-#
-
-
-import pygame, random, time
+import pygame, random
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
 ALIEN_SIZE = (30, 40)
 ALIEN_SPACER = 20
 BARRIER_ROW = 10
@@ -27,43 +18,47 @@ RES = (800, 600)
 rightPressed = False
 leftPressed = False
 
-
-# add this in /boot/config.txt (remove first # on every row)
-#
-# # uncomment to force a specific HDMI mode (this will force VGA)
-# hdmi_group=2
-# hdmi_mode=8
-
-
 # http://raspi.tv/how-to-use-interrupts-with-python-on-the-raspberry-pi-and-rpi-gpio-part-2
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 
-# Wiring Joystick + buttons:
+# Joystick:
 # UP            gpio22  pin 15
-# RIGHT         gpio27  pin 13  move right
-# LEFT          gpio18  pin 12  move left
-# GREN BUTTON   gpio23  pin 16  shoot
-# BLUE BUTTON   gpio24  pin 18  Esc
-# GND           pin 11, 14, 6
-
-# unused
 # DOWN          gpio17  pin 11
+# RIGHT         gpio27  pin 13
+# LEFT          gpio18  pin 12
+# BUTTON1       gpio23  pin 16
+# GND           pin 11, 14
 
-pinUp = 22
-pinRight = 27
-pinLeft = 18
-pinShoot = 23
-pinEsc = 24
-pinWiringSolved = 0
+GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-#GPIO pin setup
-GPIO.setup(pinUp, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(pinRight, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(pinLeft, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(pinShoot, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(pinEsc, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(pinWiringSolved, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# The GPIO.add_event_detect() line below set things up so that
+# when a rising edge is detected on the pin, regardless of whatever
+# else is happening in the program, the function "callbackXXXX" will be run
+# It will happen even while the program is waiting for
+# a falling edge on the other button.
+GPIO.add_event_detect(27, GPIO.FALLING, callback=callbackRIGHT, bouncetime=300)
+GPIO.add_event_detect(18, GPIO.FALLING, callback=callbackLEFT, bouncetime=300)
+GPIO.add_event_detect(23, GPIO.FALLING, callback=callbackBUTTON1, bouncetime=300)
+
+# now we'll define the threaded callback function
+# this will run in another thread when our event is detected
+def callbackUP(channel):
+    upPressed = True
+
+def callbackDOWN(channel):
+    downPressed = True  
+    
+def callbackRIGHT(channel):
+    rightPressed = True
+
+def callbackLEFT(channel):
+    leftPressed = True
+
+def callbackBUTTON1(channel):
+    print "SHOOT\n"
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -73,13 +68,10 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 520
         self.travel = 7
-        self.speed = 1000 # NOTE: default 1000, 150 for god mode 
+        self.speed = 350
         self.time = pygame.time.get_ticks()
 
     def update(self):
-        if GameState.god_mode == True:
-            self.speed = 150;
-            self.lives = 98;
         self.rect.x += GameState.vector * self.travel
         if self.rect.x < 0:
             self.rect.x = 0
@@ -146,41 +138,40 @@ class Game(object):
         pygame.init()
         pygame.font.init()
         self.clock = pygame.time.Clock()
-        
-        self.game_font = pygame.font.Font('data/Orbitracer.ttf', 28)
-        self.intro_font = pygame.font.Font('data/Orbitracer.ttf', 72)
-        
-        self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
-        
+        self.game_font = pygame.font.Font(
+            'data/Orbitracer.ttf', 28)
+        self.intro_font = pygame.font.Font(
+            'data/Orbitracer.ttf', 72)
+        self.screen = pygame.display.set_mode([RES[0], RES[1]])
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
         self.rounds_won = 0
         self.level_up = 50
         self.score = 0
         self.lives = 2
-        
         self.player_group = pygame.sprite.Group()
         self.alien_group = pygame.sprite.Group()
         self.bullet_group = pygame.sprite.Group()
         self.missile_group = pygame.sprite.Group()
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
-        
-        #load images and sounds
-        self.sys_overheat0 = pygame.image.load('data/graphics/system_overheating_0.png').convert_alpha()
-        self.sys_overheat1 = pygame.image.load('data/graphics/system_overheating_1.png').convert_alpha()
-        self.intro_screen = pygame.image.load('data/graphics/start_screen.jpg').convert()
-        self.background = pygame.image.load('data/graphics/Space-Background.jpg').convert()
+        self.intro_screen = pygame.image.load(
+            'data/graphics/start_screen.jpg').convert()
+        self.background = pygame.image.load(
+            'data/graphics/Space-Background.jpg').convert()
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False)
-        Alien.image = pygame.image.load('data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
+        Alien.image = pygame.image.load(
+            'data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
         Alien.image.set_colorkey(WHITE)        
         Player.image = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
         self.animate_right = False
         self.animate_left = False
-        self.explosion_sheet = pygame.image.load('data/graphics/explosion_new1.png').convert_alpha()
+        self.explosion_sheet = pygame.image.load(
+            'data/graphics/explosion_new1.png').convert_alpha()
         self.explosion_image = self.explosion_sheet.subsurface(0, 0, 79, 96)
-        self.alien_explosion_sheet = pygame.image.load('data/graphics/alien_explosion.png')
+        self.alien_explosion_sheet = pygame.image.load(
+            'data/graphics/alien_explosion.png')
         self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(0, 0, 94, 96)
         self.explode = False
         self.explode_pos = 0
@@ -189,31 +180,24 @@ class Game(object):
         pygame.mixer.music.load('data/sound/10_Arpanauts.ogg')
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.7)
-        self.bullet_fx = pygame.mixer.Sound('data/sound/shoot.wav')
-        self.explosion_fx = pygame.mixer.Sound('data/sound/invaderkilled.wav')
+        self.bullet_fx = pygame.mixer.Sound(
+            'data/sound/shoot.wav')
+        self.explosion_fx = pygame.mixer.Sound(
+            'data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
-        
-        # initialize GameState vars
         GameState.end_game = False
         GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
-        GameState.god_mode = True
 
     def control(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 GameState.start_screen = False
                 GameState.end_game = True
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                if GameState.start_screen:
-                    GameState.start_screen = False
-                    GameState.end_game = True
-                    self.kill_all()
-                else:
-                    GameState.start_screen = True
-            if GPIO.input(pinEsc) == 0:
+            if event.type == pygame.KEYDOWN \
+                    and event.key == pygame.K_ESCAPE:
                 if GameState.start_screen:
                     GameState.start_screen = False
                     GameState.end_game = True
@@ -221,26 +205,23 @@ class Game(object):
                 else:
                     GameState.start_screen = True
         self.keys = pygame.key.get_pressed()
-        if self.keys[pygame.K_LEFT] or GPIO.input(pinLeft) == 0:
+        if self.keys[pygame.K_LEFT] || leftPressed:
+            GameState.vector = -1
             self.animate_left = True
             self.animate_right = False
-            if GameState.god_mode == False:
-                GameState.vector = -1
-            else:
-                GameState.vector = -2                    
-        elif self.keys[pygame.K_RIGHT] or GPIO.input(pinRight) == 0:
+            leftPressed = False
+        elif self.keys[pygame.K_RIGHT] || rightPressed:
+            GameState.vector = 1
             self.animate_right = True
             self.animate_left = False
-            if GameState.god_mode == False:
-                GameState.vector = 1
-            else:
-                GameState.vector = 2 
+            rightPressed = False
 
         else:
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
-        if self.keys[pygame.K_SPACE] or GPIO.input(pinShoot) == 0 or GPIO.input(pinUp) == 0:
+
+        if self.keys[pygame.K_SPACE]:
             if GameState.start_screen:
                 GameState.start_screen = False
                 self.lives = 2
@@ -260,7 +241,7 @@ class Game(object):
                 self.screen.blit(self.explosion_image, [self.player.rect.x - 10, self.player.rect.y - 30])
             else:
                 self.explode = False
-                self.explode_pos = 0	
+                self.explode_pos = 0
 
     def alien_explosion(self):
         if self.alien_explode:
@@ -275,28 +256,17 @@ class Game(object):
                 self.alien_explode_pos = 0
                 self.explodey_alien = []
 
-    def splash_screen(self): 
-#        self.overheat_screen() 
+    def splash_screen(self):
         while GameState.start_screen:
-            self.kill_all()            
+            self.kill_all()
             self.screen.blit(self.intro_screen, [0, 0])
-            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
-            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-            self.screen.blit(self.game_font.render("INSERT COINS TO PLAY", 1, WHITE), (274, 500))
+            self.screen.blit(self.intro_font.render(
+                "PIVADERS", 1, WHITE), (265, 120))
+            self.screen.blit(self.game_font.render(
+                "PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             pygame.display.flip()
             self.control()
-            self.clock.tick(self.refresh_rate / 2)	
-
-    def overheat_screen(self):
-        # TODO: remove counter and replace for with "while GPIO.input(pinOverheatSolved) != 0:"
-        for count in range(0,5):
-            self.screen.blit(self.sys_overheat0, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.screen.blit(self.sys_overheat1, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.control()
+            self.clock.tick(self.refresh_rate / 2)
 
     def make_player(self):
         self.player = Player()
@@ -313,83 +283,46 @@ class Game(object):
         self.clock.tick(self.refresh_rate)
 
     def refresh_scores(self):
-        self.screen.blit(self.game_font.render("SCORE " + str(self.score), 1, WHITE), (10, 8))
-        self.screen.blit(self.game_font.render("LIVES " + str(self.lives + 1), 1, RED), (355, 575))
+        self.screen.blit(self.game_font.render(
+            "SCORE " + str(self.score), 1, WHITE), (10, 8))
+        self.screen.blit(self.game_font.render(
+            "LIVES " + str(self.lives + 1), 1, RED), (355, 575))
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
             for row in range(BARRIER_ROW):
                 alien = Alien()
-                alien.rect.y = 65 + (column * (ALIEN_SIZE[1] + ALIEN_SPACER))
-                alien.rect.x = ALIEN_SPACER + (row * (ALIEN_SIZE[0] + ALIEN_SPACER))
+                alien.rect.y = 65 + (column * (
+                    ALIEN_SIZE[1] + ALIEN_SPACER))
+                alien.rect.x = ALIEN_SPACER + (
+                    row * (ALIEN_SIZE[0] + ALIEN_SPACER))
                 self.alien_group.add(alien)
                 self.all_sprite_list.add(alien)
                 alien.speed -= speed
 
     def make_bullet(self):
         if GameState.game_time - self.player.time > self.player.speed:
-            if GameState.god_mode == False:
-                bullet = Ammo(BLUE, BULLET_SIZE)
-                bullet.vector = -1
-                bullet.speed = 13
-                bullet.rect.x = self.player.rect.x + 28
-                bullet.rect.y = self.player.rect.y
-                self.bullet_group.add(bullet)
-                self.all_sprite_list.add(bullet)
-                self.player.time = GameState.game_time
-            else:	
-                for cont in range(0, 11):
-                    bullet = Ammo(YELLOW, BULLET_SIZE)
-                    bullet.vector = -1
-                    bullet.speed = 26                  
-
-                    #if cont == 0:
-                    #    bullet.rect.x = self.player.rect.x + 29 - 6
-                    #    bullet.rect.y = self.player.rect.y - 80			
-                    #if cont == 1:
-                    #    bullet.rect.x = self.player.rect.x + 29 + 6				
-                    #    bullet.rect.y = self.player.rect.y - 80
-                    if cont == 2:
-                        bullet.rect.x = self.player.rect.x + 29 - 6
-                        bullet.rect.y = self.player.rect.y - 40        
-                    if cont == 3:
-                        bullet.rect.x = self.player.rect.x + 29 + 6          
-                        bullet.rect.y = self.player.rect.y - 20
-                    if cont == 4:
-                        bullet.rect.x = self.player.rect.x + 29 - 6            
-                        bullet.rect.y = self.player.rect.y 
-                    if cont == 5:
-                        bullet.rect.x = self.player.rect.x + 29 + 6         
-                        bullet.rect.y = self.player.rect.y + 20
-                    #if cont == 6:
-                    #    bullet.rect.x = self.player.rect.x + 29 - 6          
-                    #    bullet.rect.y = self.player.rect.y + 40
-                    #if cont == 7:
-                    #    bullet.rect.x = self.player.rect.x + 29 + 6        
-                    #    bullet.rect.y = self.player.rect.y + 40
-                    #if cont == 8:
-                    #    bullet.rect.x = self.player.rect.x + 29 - 6          
-                    #    bullet.rect.y = self.player.rect.y + 80
-                    #if cont == 9:
-                    #    bullet.rect.x = self.player.rect.x + 29 + 6      
-                    #    bullet.rect.y = self.player.rect.y + 80
-
-                    self.bullet_group.add(bullet)
-                    self.all_sprite_list.add(bullet)
-                    self.player.time = GameState.game_time
+            bullet = Ammo(BLUE, BULLET_SIZE)
+            bullet.vector = -1
+            bullet.speed = 26
+            bullet.rect.x = self.player.rect.x + 28
+            bullet.rect.y = self.player.rect.y
+            self.bullet_group.add(bullet)
+            self.all_sprite_list.add(bullet)
+            self.player.time = GameState.game_time
         GameState.shoot_bullet = False
 
     def make_missile(self):
         if len(self.alien_group):
             shoot = random.random()
-            if shoot <= 0.25: # def: 0.05
+            if shoot <= 0.05:
                 shooter = random.choice([
                     alien for alien in self.alien_group])
                 missile = Ammo(RED, MISSILE_SIZE)
                 missile.vector = 1
                 missile.rect.x = shooter.rect.x + 15
                 missile.rect.y = shooter.rect.y + 40
-                missile.speed = 18 # def: 10
+                missile.speed = 10
                 self.missile_group.add(missile)
                 self.all_sprite_list.add(missile)
 
@@ -414,7 +347,9 @@ class Game(object):
 
     def is_dead(self):
         if self.lives < 0:
-            self.screen.blit(self.game_font.render("The war is lost! You scored: " + str(self.score), 1, RED), (250, 15))
+            self.screen.blit(self.game_font.render(
+                "The war is lost! You scored: " + str(
+                    self.score), 1, RED), (250, 15))
             self.rounds_won = 0
             self.refresh_screen()
             self.level_up = 50
@@ -426,7 +361,9 @@ class Game(object):
     def defenses_breached(self):
         for alien in self.alien_group:
             if alien.rect.y > 410:
-                self.screen.blit(self.game_font.render("The aliens have breached Earth defenses!", 1, RED), (180, 15))
+                self.screen.blit(self.game_font.render(
+                    "The aliens have breached Earth defenses!",
+                    1, RED), (180, 15))
                 self.refresh_screen()
                 self.level_up = 50
                 self.explode = False
@@ -437,7 +374,9 @@ class Game(object):
     def win_round(self):
         if len(self.alien_group) < 1:
             self.rounds_won += 1
-            self.screen.blit(self.game_font.render("You won round " + str(self.rounds_won) + "  but the battle rages on", 1, RED), (200, 15))
+            self.screen.blit(self.game_font.render(
+                "You won round " + str(self.rounds_won) +
+                "  but the battle rages on", 1, RED), (200, 15))
             self.refresh_screen()
             pygame.time.delay(3000)
             return True
@@ -445,7 +384,8 @@ class Game(object):
     def next_round(self):
         self.explode = False
         self.alien_explode = False
-        for actor in [self.missile_group, self.barrier_group, self.bullet_group]:
+        for actor in [self.missile_group,
+                      self.barrier_group, self.bullet_group]:
             for i in actor:
                 i.kill()
         self.alien_wave(self.level_up)
@@ -453,10 +393,13 @@ class Game(object):
         self.level_up += 50
 
     def calc_collisions(self):
-        pygame.sprite.groupcollide(self.missile_group, self.barrier_group, True, True)
-        pygame.sprite.groupcollide(self.bullet_group, self.barrier_group, True, True)
+        pygame.sprite.groupcollide(
+            self.missile_group, self.barrier_group, True, True)
+        pygame.sprite.groupcollide(
+            self.bullet_group, self.barrier_group, True, True)
 
-        for z in pygame.sprite.groupcollide(self.bullet_group, self.alien_group, True, True):
+        for z in pygame.sprite.groupcollide(
+                self.bullet_group, self.alien_group, True, True):
             self.alien_explode = True
             self.explodey_alien.append(z.rect.x)
             self.explodey_alien.append(z.rect.y)
@@ -480,7 +423,8 @@ class Game(object):
                 self.refresh_screen()
                 if self.is_dead() or self.defenses_breached():
                     GameState.start_screen = True
-                for actor in [self.player_group, self.bullet_group, self.alien_group, self.missile_group]:
+                for actor in [self.player_group, self.bullet_group,
+                              self.alien_group, self.missile_group]:
                     for i in actor:
                         i.update()
                 if GameState.shoot_bullet:
