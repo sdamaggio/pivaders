@@ -59,8 +59,6 @@ rightPressed = False
 leftPressed = False
 
 credits = 0
-
-
 # add this in /boot/config.txt (remove first # on every row)
 #
 # # uncomment to force a specific HDMI mode (this will force VGA)
@@ -75,21 +73,12 @@ GPIO.wiringPiSetupPhys()
 # Wiring Joystick + buttons:
 # door signal   gpio23  pin 33  open when high
 # coin signal   gpio22  pin 31  active high
-# UP            gpio28  pin 38	
-# RIGHT         gpio26  pin 32 move right	
-# LEFT          gpio27  pin 36  move left
-
-# GREN BUTTON   gpio25  pin 37  Ready?   
-# BLUE BUTTON   gpio24  pin 35  Strike 
-
-# unused
-# DOWN          gpio29  pin 40
 
 pinUp = 38
 pinRight = 32
 pinLeft = 36
-pinShoot = 26
-pinReady = 19
+pinShoot = 35
+pinReady = 37
 
 pinWiringDoorOcto = 33 # door open when HIGH
 
@@ -108,13 +97,14 @@ pinLedStripRed = 19
 pinLedStripGreen = 21
 pinLedStripBlue = 23
 
-pinFan = 29
+pinFan = 29 # gpio mode 21 out, gpio write 21 1 to shut them off
+
 
 pinWiringTaskSolved = 3
 pin3CoinsInserted = 5
 pinSpaceInvadersSolved = 7
 pinBellTaskSolved = 11 # LOW is solved!
-# free mega pin 13
+# free communication to mega pin --> pin 13
 pinReset = 15 #wire it with level converter
 
 #GPIO pin setup
@@ -319,7 +309,7 @@ class Game(object):
         GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
-        GameState.god_mode = True #GOD MODE SET IT HEREEEEEEEEEEEEEEEEEEEEEEEE
+        GameState.god_mode = False #GOD MODE SET IT HEREEEEEEEEEEEEEEEEEEEEEEEE
 
     def control(self):
         for event in pygame.event.get():
@@ -327,13 +317,6 @@ class Game(object):
                 GameState.start_screen = False
                 GameState.end_game = True
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                if GameState.start_screen:
-                    GameState.start_screen = False
-                    GameState.end_game = True
-                    self.kill_all()
-                else:
-                    GameState.start_screen = True
-            if GPIO.digitalRead(pinReady) == 0:
                 if GameState.start_screen:
                     GameState.start_screen = False
                     GameState.end_game = True
@@ -360,17 +343,12 @@ class Game(object):
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
-        if self.keys[pygame.K_SPACE] or GPIO.digitalRead(pinUp) == 0 or GPIO.digitalRead(pinShoot) == 1: # ?!
+        if self.keys[pygame.K_SPACE]: 
             if GameState.start_screen:
-                GameState.start_screen = False
-                self.lives = 2
-                self.score = 0
-                self.make_player()
-                self.make_defenses()
-                self.alien_wave(0)
-            else:
-                GameState.shoot_bullet = True
-                self.bullet_fx.play()
+                start_game()
+        if GameState.start_screen == False and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
+            GameState.shoot_bullet = True
+            self.bullet_fx.play()
 
     def player_explosion(self):
         if self.explode:
@@ -395,56 +373,7 @@ class Game(object):
                 self.alien_explode_pos = 0
                 self.explodey_alien = []
 
-    def splash_screen(self): 
-        self.overheat_screen()
-        self.wiring_screen()
-        self.order_beer_screen() 
-        while GameState.start_screen:
-            self.kill_all()            
-            self.screen.blit(self.intro_screen, [0, 0])
-            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
-            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-            self.screen.blit(self.game_font.render("INSERT COINS TO PLAY", 1, WHITE), (274, 500))
-            pygame.display.flip()
-            self.control()
-            self.clock.tick(self.refresh_rate / 2)	
-
-    def overheat_screen(self):
-        while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
-            self.screen.blit(self.sys_overheat0, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.screen.blit(self.sys_overheat1, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.control()
-
-    def order_beer_screen(self): # screen for bell bar task
-        while GPIO.digitalRead(pinBellTaskSolved) == 0: # while beer is not ordered, show the screen
-            self.screen.blit(self.order_beer_image, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.control()
-
-    def wiring_screen(self):
-        while GPIO.digitalRead(pinLeft) == 0:       # while wiring is not solved, show the screen
-            self.screen.blit(self.wiring_image, [0, 0])
-            pygame.display.flip()
-            time.sleep(5.0)
-            self.control()
-
-    def coin_count_screen(self):
-        self.kill_all()
-        credits = 0
-        while credits < 3:
-            self.screen.blit(self.game_font.render("INSERT COINS TO PLAY", 1, WHITE), (274, 500))
-            self.screen.blit(self.game_font.render(str(credits) + " CREDIT", 1, WHITE), (274, 600))
-            pygame.display.flip()
-            sleep(0.2)
-            #TODO: add flipping only on credits changed        
-        self.control()
-
-    def is_wiring_solved():
+    def is_wiring_solved(self):
         # activate each plug one at a time and check if the corresponding input is triggered accordingly
         wiring_solved = True
         GPIO.digitalWrite(pinWiringPlugA, 1)
@@ -464,6 +393,57 @@ class Game(object):
             wiring_solved = False
         GPIO.digitalWrite(pinWiringPlugD, 0)
         return wiring_solved
+
+    def splash_screen(self): 
+        global credits
+        credits = 0
+        while GameState.start_screen:
+            self.kill_all()           
+            self.screen.blit(self.intro_screen, [0, 0])
+            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
+            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
+            self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+            pygame.display.flip()
+            self.control()
+            self.clock.tick(self.refresh_rate / 2)
+            if credits >= 3:
+                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+                pygame.display.flip()
+                pygame.time.delay(2000)
+                self.start_game()
+
+    def overheat_screen(self):
+        while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
+            self.screen.blit(self.sys_overheat0, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.screen.blit(self.sys_overheat1, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.control()
+
+    def order_beer_screen(self): # screen for bell bar task
+        # while GPIO.digitalRead(pinBellTaskSolved) == 0: # while beer is not ordered, show the screen
+        for i in range(0, 4):
+            self.screen.blit(self.order_beer_image, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.control()
+
+    def wiring_screen(self):
+        while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
+            self.screen.blit(self.wiring_image, [0, 0])
+            pygame.display.flip()
+            time.sleep(5.0)
+            self.control()
+
+    def start_game(self):        
+        GameState.start_screen = False
+        self.lives = 2
+        self.score = 0
+        self.make_player()
+        self.make_defenses()
+        self.alien_wave(0)
 
     def make_player(self):
         self.player = Player()
@@ -588,7 +568,7 @@ class Game(object):
             self.level_up = 50
             self.explode = False
             self.alien_explode = False
-            pygame.time.delay(3000)
+            pygame.time.delay(10000)
             return True
 
     def defenses_breached(self):
@@ -638,6 +618,9 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
+        self.overheat_screen()
+        self.wiring_screen()
+        self.order_beer_screen()        
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
