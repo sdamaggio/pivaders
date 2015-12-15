@@ -1,6 +1,12 @@
 #!/usr/bin/env python2
 
 # TODO:
+# add someting to get to the god mode screen
+# game should have only 1 level so remove other levels
+# once we win god mode game it should stay on that screen until next reset
+# send signals to mega and check signals from mega
+
+# show "insert 0 coin" before starting to play
 # change spaceship color when god mode is on
 # and add volume to sound
 
@@ -77,6 +83,7 @@ GPIO.wiringPiSetupPhys()
 pinUp = 38
 pinRight = 32
 pinLeft = 36
+pinDown = 40
 pinShoot = 35
 pinReady = 37
 
@@ -114,6 +121,8 @@ GPIO.pinMode(pinRight, 0)
 GPIO.pullUpDnControl(pinRight, 2)
 GPIO.pinMode(pinLeft, 0)
 GPIO.pullUpDnControl(pinLeft, 2)
+GPIO.pinMode(pinDown, 0)
+GPIO.pullUpDnControl(pinDown, 2)
 GPIO.pinMode(pinShoot, 0)
 GPIO.pullUpDnControl(pinShoot, 2)
 GPIO.pinMode(pinReady, 0)
@@ -186,8 +195,7 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         if GameState.god_mode == True:
-            self.speed = 150;
-            self.lives = 98;
+            self.speed = 150
         self.rect.x += GameState.vector * self.travel
         if self.rect.x < 0:
             self.rect.x = 0
@@ -309,7 +317,7 @@ class Game(object):
         GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
-        GameState.god_mode = False #GOD MODE SET IT HEREEEEEEEEEEEEEEEEEEEEEEEE
+        GameState.god_mode = False 
 
     def control(self):
         for event in pygame.event.get():
@@ -402,15 +410,23 @@ class Game(object):
             self.screen.blit(self.intro_screen, [0, 0])
             #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
             #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-            self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+            font = pygame.font.Font('data/Orbitracer.ttf', 26)
+            text = font.render("press Ready to enter a cheat code", 1, WHITE)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
+            
+            if credits >= 3 or GameState.god_mode == True:
+                self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
+                if GPIO.digitalRead(pinShoot) == 0:
+                    self.start_game()
+            else:
+                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+            
+            if GPIO.digitalRead(pinReady) == 0:
+                self.cheat_code_input_screen()
+
             pygame.display.flip()
             self.control()
             self.clock.tick(self.refresh_rate / 2)
-            if credits >= 3:
-                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
-                pygame.display.flip()
-                pygame.time.delay(2000)
-                self.start_game()
 
     def overheat_screen(self):
         while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
@@ -422,14 +438,6 @@ class Game(object):
             time.sleep(1.0)
             self.control()
 
-    def order_beer_screen(self): # screen for bell bar task
-        # while GPIO.digitalRead(pinBellTaskSolved) == 0: # while beer is not ordered, show the screen
-        for i in range(0, 4):
-            self.screen.blit(self.order_beer_image, [0, 0])
-            pygame.display.flip()
-            time.sleep(1.0)
-            self.control()
-
     def wiring_screen(self):
         while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
             self.screen.blit(self.wiring_image, [0, 0])
@@ -437,9 +445,78 @@ class Game(object):
             time.sleep(5.0)
             self.control()
 
+    def order_beer_screen(self): # screen for bell bar task
+        # while GPIO.digitalRead(pinBellTaskSolved) == 0: # while beer is not ordered, show the screen
+        for i in range(0, 4): # TODO: remove
+            self.screen.blit(self.order_beer_image, [0, 0])
+            pygame.display.flip()
+            time.sleep(1.0)
+            self.control()
+
+    def cheat_code_input_screen(self):
+        digit_values=[0,0,0,0]
+        digit_solution=[1,3,8,0]
+        selected_digit = 0
+        code_entered = False
+
+        while code_entered == False:
+            if GPIO.digitalRead(pinRight) == 0 and selected_digit < 4:
+                    selected_digit += 1
+            elif GPIO.digitalRead(pinLeft) == 0 and selected_digit > 0:
+                selected_digit += -1
+            elif selected_digit == 4:
+                if GPIO.digitalRead(pinShoot) == 0:
+                    code_entered = True
+            elif GPIO.digitalRead(pinUp) == 0 and digit_values[selected_digit] < 9:
+                digit_values[selected_digit] += 1
+            elif GPIO.digitalRead(pinDown) == 0 and digit_values[selected_digit] > 0:
+                digit_values[selected_digit] += -1                            
+            self.draw_joystick_digit_selector(digit_values, selected_digit)
+            time.sleep(0.1)
+
+        if digit_values == digit_solution:
+            self.screen.blit(self.game_font.render("GOD MODE ACTIVATED!", 1, WHITE), (274, 550))
+            pygame.display.flip()
+            GameState.god_mode = True            
+            time.sleep(3.0)
+
+    def draw_joystick_digit_selector(self, digit_values, selected_digit):
+        self.screen.fill(BLACK)
+        text = self.game_font.render("INSERT CHEAT CODE", 1, WHITE)
+        self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 70))
+            
+        for i in range(0,4):
+            digit_x = 80+(i*180)
+            digit_y = 200
+            digit_width = 100
+            digit_height = 200
+            
+            if i==selected_digit:
+                color = RED
+            else:
+                color = WHITE
+            pygame.draw.rect(self.screen, color, pygame.Rect(digit_x, digit_y, digit_width, digit_height), 5) # remove last number to have filling inside instead of filling on the border
+            pygame.draw.polygon(self.screen, color, [[digit_x, digit_y - 10], [digit_x+digit_width, digit_y - 10], [digit_x+(digit_width/2), digit_y-60]])
+            pygame.draw.polygon(self.screen, color, [[digit_x, digit_y+digit_height + 10], [digit_x+digit_width, digit_y+digit_height + 10], [digit_x+(digit_width/2), digit_y+digit_height+60]])
+
+            font = pygame.font.Font(None, 54)
+            if selected_digit == 4:                
+                text = font.render("OK", 1, RED)
+            else:
+                text = font.render("OK", 1, WHITE)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
+
+            font = pygame.font.Font(None, 250)
+            text = font.render(str(digit_values[i]), 1, WHITE)
+            self.screen.blit(text, (digit_x+3, digit_y+10))
+        pygame.display.flip()
+
     def start_game(self):        
         GameState.start_screen = False
-        self.lives = 2
+        if GameState.god_mode:
+            self.lives = 98
+        else
+            self.lives = 2
         self.score = 0
         self.make_player()
         self.make_defenses()
@@ -584,8 +661,11 @@ class Game(object):
 
     def win_round(self):
         if len(self.alien_group) < 1:
-            self.rounds_won += 1
-            self.screen.blit(self.game_font.render("You won round " + str(self.rounds_won) + "  but the battle rages on", 1, RED), (200, 15))
+            #self.rounds_won += 1            
+            font = pygame.font.Font('data/Orbitracer.ttf', 60)
+            text = font.render("YOU WON!! Your score is " + str(self.score), 1, BLUE)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 250))
+            # self.screen.blit(self.game_font.render("YOU WON!! Your score is " + str(self.score) , 1, RED), (200, 15))
             self.refresh_screen()
             pygame.time.delay(3000)
             return True
@@ -618,9 +698,9 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        self.overheat_screen()
-        self.wiring_screen()
-        self.order_beer_screen()        
+        #self.overheat_screen()
+        #self.wiring_screen()
+        #self.order_beer_screen()    
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
@@ -637,7 +717,9 @@ class Game(object):
                 if GameState.shoot_bullet:
                     self.make_bullet()
                 if self.win_round():
-                    self.next_round()
+                    # TODO: send invaders solved signal
+                    while True:
+                        time.sleep(1.0)
             self.splash_screen()
         pygame.quit()
 
