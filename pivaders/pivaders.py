@@ -1,10 +1,8 @@
 #!/usr/bin/env python2
 
 # TODO:
-# add someting to get to the god mode screen
-# game should have only 1 level so remove other levels
-# once we win god mode game it should stay on that screen until next reset
-# send signals to mega and check signals from mega
+# reset
+
 
 # show "insert 0 coin" before starting to play
 # change spaceship color when god mode is on
@@ -424,6 +422,9 @@ class Game(object):
             if GPIO.digitalRead(pinReady) == 0:
                 self.cheat_code_input_screen()
 
+            if credits >= 3:
+                GPIO.digitalWrite(pin3CoinsInserted, 0)
+
             pygame.display.flip()
             self.control()
             self.clock.tick(self.refresh_rate / 2)
@@ -444,10 +445,10 @@ class Game(object):
             pygame.display.flip()
             time.sleep(5.0)
             self.control()
+        GPIO.digitalWrite(pinWiringTaskSolved, 0)
 
     def order_beer_screen(self): # screen for bell bar task
-        # while GPIO.digitalRead(pinBellTaskSolved) == 0: # while beer is not ordered, show the screen
-        for i in range(0, 4): # TODO: remove
+        while GPIO.digitalRead(pinBellTaskSolved) == 1: # while beer is not ordered, show the screen
             self.screen.blit(self.order_beer_image, [0, 0])
             pygame.display.flip()
             time.sleep(1.0)
@@ -661,7 +662,8 @@ class Game(object):
 
     def win_round(self):
         if len(self.alien_group) < 1:
-            #self.rounds_won += 1            
+            #self.rounds_won += 1         
+            GPIO.digitalWrite(pinSpaceInvadersSolved, 0)   
             font = pygame.font.Font('data/Orbitracer.ttf', 60)
             text = font.render("YOU WON!! Your score is " + str(self.score), 1, BLUE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 250))
@@ -698,9 +700,9 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        #self.overheat_screen()
-        #self.wiring_screen()
-        #self.order_beer_screen()    
+        self.overheat_screen()
+        self.wiring_screen()
+        self.order_beer_screen()    
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
