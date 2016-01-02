@@ -316,6 +316,7 @@ class Game(object):
         GameState.vector = 0
         GameState.shoot_bullet = False
         GameState.god_mode = False 
+        GameState.has_played_once = False
 
     def control(self):
         for event in pygame.event.get():
@@ -412,11 +413,11 @@ class Game(object):
             text = font.render("press Ready to enter a cheat code", 1, WHITE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
             
-            if credits >= 3 or GameState.god_mode == True:
+            if credits >= 3:
                 self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
                 if GPIO.digitalRead(pinShoot) == 0:
                     self.start_game()
-            else:
+            elif GameState.has_played_once == False:
                 self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
             
             if GPIO.digitalRead(pinReady) == 0:
@@ -516,7 +517,7 @@ class Game(object):
         GameState.start_screen = False
         if GameState.god_mode:
             self.lives = 98
-        else
+        else:
             self.lives = 2
         self.score = 0
         self.make_player()
@@ -700,9 +701,9 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        self.overheat_screen()
-        self.wiring_screen()
-        self.order_beer_screen()    
+        #self.overheat_screen()
+        #self.wiring_screen()
+        #self.order_beer_screen()    
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
@@ -713,6 +714,7 @@ class Game(object):
                 self.refresh_screen()
                 if self.is_dead() or self.defenses_breached():
                     GameState.start_screen = True
+                    GameState.has_played_once = True
                 for actor in [self.player_group, self.bullet_group, self.alien_group, self.missile_group]:
                     for i in actor:
                         i.update()
