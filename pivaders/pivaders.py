@@ -2,14 +2,13 @@
 
 # TODO:
 # reset
-
-
-# show "insert 0 coin" before starting to play
 # change spaceship color when god mode is on
 # and add volume to sound
 
+# to disable screen-sleep run this command:
+# setterm -powersave off -blank 0
 
-# // Pin modes
+# // Pin modes pinMode()
 # 
 # #define INPUT            0
 # #define OUTPUT           1
@@ -22,7 +21,7 @@
 # #define LOW          0
 # #define HIGH             1
 # 
-# // Pull up/down/none
+# // Pull up/down/none pullUpDnControl()
 # 
 # #define PUD_OFF          0
 # #define PUD_DOWN         1
@@ -39,7 +38,15 @@
 # #define INT_EDGE_FALLING    1
 # #define INT_EDGE_RISING     2
 # #define INT_EDGE_BOTH       3
-
+#
+#
+#
+#
+# in order to run this script at startup with root privileges:
+# -add a line in sudo nano /etc/rc.local: sudo python /home/pi/.../script.py &
+# -sudo chown root script.sh
+# -sudo chmod +s script.sh
+#
 
 
 
@@ -113,7 +120,7 @@ pinBellTaskSolved = 11 # LOW is solved!
 pinReset = 15 #wire it with level converter
 
 #GPIO pin setup
-GPIO.pinMode(pinUp, 0)
+GPIO.pinMode(pinUp, 0) # 
 GPIO.pullUpDnControl(pinUp, 2)
 GPIO.pinMode(pinRight, 0)
 GPIO.pullUpDnControl(pinRight, 2)
@@ -125,8 +132,6 @@ GPIO.pinMode(pinShoot, 0)
 GPIO.pullUpDnControl(pinShoot, 2)
 GPIO.pinMode(pinReady, 0)
 GPIO.pullUpDnControl(pinReady, 2)
-GPIO.pinMode(pinWiringTaskSolved, 0)
-GPIO.pullUpDnControl(pinWiringTaskSolved, 2)
 
 GPIO.pinMode(pinWiringDoorOcto, 0)
 
@@ -165,7 +170,7 @@ GPIO.pinMode(pinLedStripBlue, 1)
 GPIO.digitalWrite(pinLedStripBlue, 0)
 
 GPIO.pinMode(pinFan, 1)
-GPIO.digitalWrite(pinFan, 0)
+GPIO.digitalWrite(pinFan, 1)
 
 GPIO.pinMode(pinWiringTaskSolved, 1)
 GPIO.digitalWrite(pinWiringTaskSolved, 1)
@@ -174,7 +179,7 @@ GPIO.digitalWrite(pin3CoinsInserted, 1)
 GPIO.pinMode(pinSpaceInvadersSolved, 1)
 GPIO.digitalWrite(pinSpaceInvadersSolved, 1)
 GPIO.pinMode(pinBellTaskSolved, 0) 
-GPIO.pullUpDnControl(pinBellTaskSolved, 2) # TODO: remove for production
+# GPIO.pullUpDnControl(pinBellTaskSolved, 2) # TODO: remove for production
 GPIO.pinMode(pinReset, 0)
 GPIO.pullUpDnControl(pinReset, 2) # TODO: remove for production
 
@@ -261,8 +266,8 @@ class Game(object):
         pygame.font.init()
         self.clock = pygame.time.Clock()
         
-        self.game_font = pygame.font.Font('data/Orbitracer.ttf', 28)
-        self.intro_font = pygame.font.Font('data/Orbitracer.ttf', 72)
+        self.game_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 28)
+        self.intro_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 72)
         
         self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
         
@@ -281,32 +286,32 @@ class Game(object):
         self.all_sprite_list = pygame.sprite.Group()
         
         #load images and sounds
-        self.sys_overheat0 = pygame.image.load('data/graphics/system_overheating_0.png').convert_alpha()
-        self.sys_overheat1 = pygame.image.load('data/graphics/system_overheating_1.png').convert_alpha()
-        self.wiring_image = pygame.image.load('data/graphics/wiring_screen.jpg').convert()
-        self.order_beer_image = pygame.image.load('data/graphics/order_beer_screen.jpg').convert()
-        self.intro_screen = pygame.image.load('data/graphics/start_screen.jpg').convert()
-        self.background = pygame.image.load('data/graphics/Space-Background.jpg').convert()
+        self.sys_overheat0 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_0.png').convert_alpha()
+        self.sys_overheat1 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_1.png').convert_alpha()
+        self.wiring_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/wiring_screen.jpg').convert()
+        self.order_beer_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/order_beer_screen.jpg').convert()
+        self.intro_screen = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/start_screen.jpg').convert()
+        self.background = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/Space-Background.jpg').convert()
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False)
-        Alien.image = pygame.image.load('data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
+        Alien.image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
         Alien.image.set_colorkey(WHITE)        
-        Player.image = pygame.image.load('data/graphics/ship_sheet_final.png').convert_alpha()
+        Player.image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/ship_sheet_final.png').convert_alpha()
         self.animate_right = False
         self.animate_left = False
-        self.explosion_sheet = pygame.image.load('data/graphics/explosion_new1.png').convert_alpha()
+        self.explosion_sheet = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/explosion_new1.png').convert_alpha()
         self.explosion_image = self.explosion_sheet.subsurface(0, 0, 79, 96)
-        self.alien_explosion_sheet = pygame.image.load('data/graphics/alien_explosion.png')
+        self.alien_explosion_sheet = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/alien_explosion.png')
         self.alien_explode_graphics = self.alien_explosion_sheet.subsurface(0, 0, 94, 96)
         self.explode = False
         self.explode_pos = 0
         self.alien_explode = False
         self.alien_explode_pos = 0
-        pygame.mixer.music.load('data/sound/10_Arpanauts.ogg')
+        pygame.mixer.music.load('/home/pi/DEV/pivaders/pivaders/data/sound/10_Arpanauts.ogg')
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.7)
-        self.bullet_fx = pygame.mixer.Sound('data/sound/shoot.wav')
-        self.explosion_fx = pygame.mixer.Sound('data/sound/invaderkilled.wav')
+        self.bullet_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/shoot.wav')
+        self.explosion_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
         
@@ -409,7 +414,7 @@ class Game(object):
             self.screen.blit(self.intro_screen, [0, 0])
             #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
             #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-            font = pygame.font.Font('data/Orbitracer.ttf', 26)
+            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
             text = font.render("press Ready to enter a cheat code", 1, WHITE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
             
@@ -665,7 +670,7 @@ class Game(object):
         if len(self.alien_group) < 1:
             #self.rounds_won += 1         
             GPIO.digitalWrite(pinSpaceInvadersSolved, 0)   
-            font = pygame.font.Font('data/Orbitracer.ttf', 60)
+            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 60)
             text = font.render("YOU WON!! Your score is " + str(self.score), 1, BLUE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 250))
             # self.screen.blit(self.game_font.render("YOU WON!! Your score is " + str(self.score) , 1, RED), (200, 15))
@@ -701,9 +706,9 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        #self.overheat_screen()
-        #self.wiring_screen()
-        #self.order_beer_screen()    
+        self.overheat_screen()
+        self.wiring_screen()
+        self.order_beer_screen()    
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
