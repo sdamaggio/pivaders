@@ -428,6 +428,11 @@ class Game(object):
             if GPIO.digitalRead(pinReady) == 0:
                 self.cheat_code_input_screen()
 
+            if GameState.god_mode == True:
+                self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
+                if GPIO.digitalRead(pinShoot) == 0:
+                    self.start_game()
+
             if credits >= 3:
                 GPIO.digitalWrite(pin3CoinsInserted, 0)
 
