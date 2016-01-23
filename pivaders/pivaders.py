@@ -160,7 +160,7 @@ def coin_counted_event(channel):
 import RPi.GPIO as wiringpi
 wiringpi.setmode(wiringpi.BOARD)
 wiringpi.setup(pinCoinCounter, wiringpi.IN)  
-wiringpi.add_event_detect(pinCoinCounter, wiringpi.FALLING, callback=coin_counted_event, bouncetime=300)
+wiringpi.add_event_detect(pinCoinCounter, wiringpi.FALLING, callback=coin_counted_event, bouncetime=800) # old value was 300
 
 GPIO.pinMode(pinLedStripRed, 1)
 GPIO.digitalWrite(pinLedStripRed, 0)
@@ -276,7 +276,7 @@ class Game(object):
         self.rounds_won = 0
         self.level_up = 50
         self.score = 0
-        self.lives = 2
+        self.lives = 10
         
         self.player_group = pygame.sprite.Group()
         self.alien_group = pygame.sprite.Group()
@@ -415,8 +415,6 @@ class Game(object):
             #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
             #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
-            text = font.render("press Ready to enter a cheat code", 1, WHITE)
-            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
             
             if credits >= 3:
                 self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
@@ -424,9 +422,13 @@ class Game(object):
                     self.start_game()
             elif GameState.has_played_once == False:
                 self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+            elif GameState.has_played_once == True:
+                text = font.render("press Ready to enter a cheat code", 1, WHITE)
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
+                if GPIO.digitalRead(pinReady) == 0:
+                    self.cheat_code_input_screen()
             
-            if GPIO.digitalRead(pinReady) == 0:
-                self.cheat_code_input_screen()
+            
 
             if GameState.god_mode == True:
                 self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
@@ -528,7 +530,7 @@ class Game(object):
         if GameState.god_mode:
             self.lives = 98
         else:
-            self.lives = 2
+            self.lives = 10
         self.score = 0
         self.make_player()
         self.make_defenses()
@@ -713,7 +715,8 @@ class Game(object):
     def main_loop(self):
         self.overheat_screen()
         self.wiring_screen()
-        self.order_beer_screen()    
+        self.order_beer_screen()
+        GPIO.digitalWrite(pinFan, 0)
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
