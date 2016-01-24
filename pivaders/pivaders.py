@@ -444,17 +444,17 @@ class Game(object):
         while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
             self.screen.blit(self.sys_overheat0, [0, 0])
             pygame.display.flip()
-            time.sleep(1.0)
+            pygame.time.delay(1000)
             self.screen.blit(self.sys_overheat1, [0, 0])
             pygame.display.flip()
-            time.sleep(1.0)
+            pygame.time.delay(1.0)
             self.control()
 
     def wiring_screen(self):
         while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
             self.screen.blit(self.wiring_image, [0, 0])
             pygame.display.flip()
-            time.sleep(5.0)
+            pygame.time.delay(1000)
             self.control()
         GPIO.digitalWrite(pinWiringTaskSolved, 0)
 
@@ -462,7 +462,7 @@ class Game(object):
         while GPIO.digitalRead(pinBellTaskSolved) == 1: # while beer is not ordered, show the screen
             self.screen.blit(self.order_beer_image, [0, 0])
             pygame.display.flip()
-            time.sleep(1.0)
+            pygame.time.delay(1000)
             self.control()
 
     def cheat_code_input_screen(self):
@@ -484,20 +484,20 @@ class Game(object):
             elif GPIO.digitalRead(pinDown) == 0 and digit_values[selected_digit] > 0:
                 digit_values[selected_digit] += -1                            
             self.draw_joystick_digit_selector(digit_values, selected_digit)
-            time.sleep(0.1)
+            pygame.time.delay(100)
 
         if digit_values == digit_solution:            
             for i in range(0,5):
                 # delete bottom part of the screen
                 pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, 470, 2000, 2000))
                 pygame.display.flip()
-                time.sleep(0.2)
+                pygame.time.delay(200)
 
                 font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 60)
                 text = font.render("GOD MODE ACTIVATED!", 1, YELLOW)
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
                 pygame.display.flip()
-                time.sleep(0.6)
+                pygame.time.delay(600)
 
             GameState.god_mode = True            
             
@@ -506,13 +506,13 @@ class Game(object):
                 # delete bottom part of the screen
                 pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, 470, 2000, 2000))
                 pygame.display.flip()
-                time.sleep(0.2)
+                pygame.time.delay(200)
 
                 font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
                 text = font.render("INVALID CODE", 1, YELLOW)
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
                 pygame.display.flip()
-                time.sleep(1.0)
+                pygame.time.delay(1000)
 
 
     def draw_joystick_digit_selector(self, digit_values, selected_digit):
@@ -757,7 +757,7 @@ class Game(object):
                 if self.win_round():
                     # TODO: send invaders solved signal
                     while True:
-                        time.sleep(1.0)
+                        pygame.time.delay(1.0)
             self.splash_screen()
         pygame.quit()
 
