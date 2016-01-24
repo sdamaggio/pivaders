@@ -69,7 +69,7 @@ RES = (800, 600)
 rightPressed = False
 leftPressed = False
 
-credits = 0
+credits = 3
 # add this in /boot/config.txt (remove first # on every row)
 #
 # # uncomment to force a specific HDMI mode (this will force VGA)
@@ -288,7 +288,7 @@ class Game(object):
         #load images and sounds
         self.sys_overheat0 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_0.png').convert_alpha()
         self.sys_overheat1 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_1.png').convert_alpha()
-        self.wiring_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/wiring_screen.jpg').convert()
+        self.wiring_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/wiring_screen.png').convert_alpha()
         self.order_beer_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/order_beer_screen.jpg').convert()
         self.intro_screen = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/start_screen.jpg').convert()
         self.background = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/Space-Background.jpg').convert()
@@ -423,12 +423,10 @@ class Game(object):
             elif GameState.has_played_once == False:
                 self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
             elif GameState.has_played_once == True:
-                text = font.render("press Ready to enter a cheat code", 1, WHITE)
+                text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
-                if GPIO.digitalRead(pinReady) == 0:
-                    self.cheat_code_input_screen()
-            
-            
+                if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
+                    self.cheat_code_input_screen()           
 
             if GameState.god_mode == True:
                 self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
@@ -488,11 +486,34 @@ class Game(object):
             self.draw_joystick_digit_selector(digit_values, selected_digit)
             time.sleep(0.1)
 
-        if digit_values == digit_solution:
-            self.screen.blit(self.game_font.render("GOD MODE ACTIVATED!", 1, WHITE), (274, 550))
-            pygame.display.flip()
+        if digit_values == digit_solution:            
+            for i in range(0,5):
+                # delete bottom part of the screen
+                pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, 470, 2000, 2000))
+                pygame.display.flip()
+                time.sleep(0.2)
+
+                font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 60)
+                text = font.render("GOD MODE ACTIVATED!", 1, YELLOW)
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
+                pygame.display.flip()
+                time.sleep(0.6)
+
             GameState.god_mode = True            
-            time.sleep(3.0)
+            
+        else:
+            for i in range(0,2):
+                # delete bottom part of the screen
+                pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, 470, 2000, 2000))
+                pygame.display.flip()
+                time.sleep(0.2)
+
+                font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
+                text = font.render("INVALID CODE", 1, YELLOW)
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
+                pygame.display.flip()
+                time.sleep(1.0)
+
 
     def draw_joystick_digit_selector(self, digit_values, selected_digit):
         self.screen.fill(BLACK)
@@ -553,7 +574,7 @@ class Game(object):
     def refresh_scores(self):
         self.screen.blit(self.game_font.render("SCORE " + str(self.score), 1, WHITE), (10, 8))
         self.screen.blit(self.game_font.render("LIVES " + str(self.lives + 1), 1, RED), (355, 575))
-        self.screen.blit(self.game_font.render("CREDITS " + str(credits), 1, WHITE), (680, 8))
+        # self.screen.blit(self.game_font.render("CREDITS " + str(credits), 1, WHITE), (680, 8)) TODO: fix credits display or remove
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
