@@ -116,8 +116,8 @@ pinWiringTaskSolved = 3
 pin3CoinsInserted = 5
 pinSpaceInvadersSolved = 7
 pinBellTaskSolved = 11 # LOW is solved!
-# free communication to mega pin --> pin 13
-pinReset = 15 #wire it with level converter
+pinInfinityMirrorOn = 15 # LOW is solved!
+pinReset = 13 #wire it with level converter
 
 #GPIO pin setup
 GPIO.pinMode(pinUp, 0) # 
@@ -289,7 +289,8 @@ class Game(object):
         self.sys_overheat0 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_0.png').convert_alpha()
         self.sys_overheat1 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_1.png').convert_alpha()
         self.wiring_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/wiring_screen.png').convert_alpha()
-        self.order_beer_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/order_beer_screen.jpg').convert()
+        self.not_cool_enough_image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/not_cool_enough.png').convert_alpha()
+        self.morse_code = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/morse_code.png').convert_alpha()
         self.intro_screen = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/start_screen.jpg').convert()
         self.background = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/Space-Background.jpg').convert()
         pygame.display.set_caption('Pivaders - ESC to exit')
@@ -422,7 +423,7 @@ class Game(object):
                     self.start_game()
             elif GameState.has_played_once == False:
                 self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
-            elif GameState.has_played_once == True:
+            elif GameState.has_played_once == True and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
                 text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
                 if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
@@ -447,22 +448,28 @@ class Game(object):
             pygame.time.delay(1000)
             self.screen.blit(self.sys_overheat1, [0, 0])
             pygame.display.flip()
-            pygame.time.delay(1.0)
+            pygame.time.delay(1000)
             self.control()
 
     def wiring_screen(self):
         while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
             self.screen.blit(self.wiring_image, [0, 0])
             pygame.display.flip()
-            pygame.time.delay(1000)
+            pygame.time.delay(200)
             self.control()
         GPIO.digitalWrite(pinWiringTaskSolved, 0)
 
     def order_beer_screen(self): # screen for bell bar task
-        while GPIO.digitalRead(pinBellTaskSolved) == 1: # while beer is not ordered, show the screen
-            self.screen.blit(self.order_beer_image, [0, 0])
+        while GPIO.digitalRead(pinShoot) == 1 and GPIO.digitalRead(pinReady) == 1:                
+            self.screen.blit(self.not_cool_enough_image, [0, 0])
             pygame.display.flip()
-            pygame.time.delay(1000)
+            pygame.time.delay(200)
+            self.control()
+
+        while GPIO.digitalRead(pinBellTaskSolved) == 1: # while beer is not ordered, show the screen
+            self.screen.blit(self.morse_code, [0, 0])
+            pygame.display.flip()
+            pygame.time.delay(200)
             self.control()
 
     def cheat_code_input_screen(self):
@@ -757,7 +764,7 @@ class Game(object):
                 if self.win_round():
                     # TODO: send invaders solved signal
                     while True:
-                        pygame.time.delay(1.0)
+                        pygame.time.delay(1000)
             self.splash_screen()
         pygame.quit()
 
