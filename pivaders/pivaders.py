@@ -742,8 +742,8 @@ class Game(object):
     def main_loop(self):
         self.overheat_screen()
         self.wiring_screen()
+	GPIO.digitalWrite(pinFan, 0)
         self.order_beer_screen()
-        GPIO.digitalWrite(pinFan, 0)
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
