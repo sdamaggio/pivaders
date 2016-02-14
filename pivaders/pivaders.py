@@ -113,7 +113,7 @@ pinFan = 29 # gpio mode 21 out, gpio write 21 1 to shut them off
 
 
 pinWiringTaskSolved = 3
-pin3CoinsInserted = 5
+pinFirstGameLost = 5
 pinSpaceInvadersSolved = 7
 pinBellTaskSolved = 11 # LOW is solved!
 pinInfinityMirrorOn = 15 # LOW is solved!
@@ -174,12 +174,13 @@ GPIO.digitalWrite(pinFan, 1)
 
 GPIO.pinMode(pinWiringTaskSolved, 1)
 GPIO.digitalWrite(pinWiringTaskSolved, 1)
-GPIO.pinMode(pin3CoinsInserted, 1)
-GPIO.digitalWrite(pin3CoinsInserted, 1)
+GPIO.pinMode(pinFirstGameLost, 1)
+GPIO.digitalWrite(pinFirstGameLost, 1)
 GPIO.pinMode(pinSpaceInvadersSolved, 1)
 GPIO.digitalWrite(pinSpaceInvadersSolved, 1)
 GPIO.pinMode(pinBellTaskSolved, 0) 
 # GPIO.pullUpDnControl(pinBellTaskSolved, 2) # TODO: remove for production
+GPIO.pinMode(pinInfinityMirrorOn, 0)
 GPIO.pinMode(pinReset, 0)
 GPIO.pullUpDnControl(pinReset, 2) # TODO: remove for production
 
@@ -434,9 +435,6 @@ class Game(object):
                 if GPIO.digitalRead(pinShoot) == 0:
                     self.start_game()
 
-            if credits >= 3:
-                GPIO.digitalWrite(pin3CoinsInserted, 0)
-
             pygame.display.flip()
             self.control()
             self.clock.tick(self.refresh_rate / 2)
@@ -682,6 +680,7 @@ class Game(object):
     def is_dead(self):
         if self.lives < 0:
             self.screen.blit(self.game_font.render("The war is lost! You scored: " + str(self.score), 1, RED), (250, 15))
+            GPIO.digitalWrite(pinFirstGameLost, 0);
             self.rounds_won = 0
             self.refresh_screen()
             self.level_up = 50
