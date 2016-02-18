@@ -310,7 +310,6 @@ class Game(object):
         self.alien_explode = False
         self.alien_explode_pos = 0
         pygame.mixer.music.load('/home/pi/DEV/pivaders/pivaders/data/sound/10_Arpanauts.ogg')
-        pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.7)
         self.bullet_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/shoot.wav')
         self.explosion_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/invaderkilled.wav')
@@ -742,7 +741,9 @@ class Game(object):
     def main_loop(self):
         self.overheat_screen()
         self.wiring_screen()
-	GPIO.digitalWrite(pinFan, 0)
+        GPIO.digitalWrite(pinFan, 0)
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.7)
         self.order_beer_screen()
         while not GameState.end_game:
             while not GameState.start_screen:
