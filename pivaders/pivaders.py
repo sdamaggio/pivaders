@@ -31,7 +31,7 @@
 # 
 # #define PWM_MODE_MS     0
 # #define PWM_MODE_BAL        1
-# 
+#
 # // Interrupt levels
 # 
 # #define INT_EDGE_SETUP      0
@@ -51,6 +51,7 @@
 
 
 import pygame, random, time
+import os, sys
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
@@ -113,8 +114,8 @@ pinFan = 29 # gpio mode 21 out, gpio write 21 1 to shut them off
 
 
 pinWiringTaskSolved = 3
-pinFirstGameLost = 5
-pinSpaceInvadersSolved = 7
+pinFirstGameLost = 5 # LOW is solved!
+pinSpaceInvadersSolved = 7 # LOW is solved!
 pinBellTaskSolved = 11 # LOW is solved!
 pinInfinityMirrorOn = 15 # LOW is solved!
 pinReset = 13 #wire it with level converter
@@ -179,10 +180,10 @@ GPIO.digitalWrite(pinFirstGameLost, 1)
 GPIO.pinMode(pinSpaceInvadersSolved, 1)
 GPIO.digitalWrite(pinSpaceInvadersSolved, 1)
 GPIO.pinMode(pinBellTaskSolved, 0) 
-# GPIO.pullUpDnControl(pinBellTaskSolved, 2) # TODO: remove for production
 GPIO.pinMode(pinInfinityMirrorOn, 0)
 GPIO.pinMode(pinReset, 0)
-GPIO.pullUpDnControl(pinReset, 2) # TODO: remove for production
+print("pivaders: pin initialization complete!")
+
 
 
 
@@ -325,6 +326,12 @@ class Game(object):
         GameState.has_played_once = False
 
     def control(self):
+        if GPIO.digitalRead(pinReset) == 0:
+            print("about to exit")
+            os.system("sleep 10 && sudo python /home/pi/DEV/pivaders/pivaders/pivaders.py &")
+            print("reboot sequence executed! bye")
+            #self.kill_all()
+            sys.exit()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 GameState.start_screen = False
