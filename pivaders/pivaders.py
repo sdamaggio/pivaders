@@ -329,7 +329,7 @@ class Game(object):
         if GPIO.digitalRead(pinReset) == 0:
             print("about to exit")
             os.system("sleep 10 && sudo python /home/pi/DEV/pivaders/pivaders/pivaders.py &")
-            print("reboot sequence executed! bye")
+            print("reboot sequence executed! good bye")
             #self.kill_all()
             sys.exit()
         for event in pygame.event.get():
@@ -462,6 +462,7 @@ class Game(object):
             pygame.time.delay(200)
             self.control()
         GPIO.digitalWrite(pinWiringTaskSolved, 0)
+        GPIO.digitalWrite(pinFan, 0)        
 
     def order_beer_screen(self): # screen for bell bar task
         while GPIO.digitalRead(pinShoot) == 1 and GPIO.digitalRead(pinReady) == 1:                
@@ -475,6 +476,10 @@ class Game(object):
             pygame.display.flip()
             pygame.time.delay(200)
             self.control()
+
+        # when bell task is solved play backgroun music
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.7)
 
     def cheat_code_input_screen(self):
         digit_values=[0,0,0,0]
@@ -747,10 +752,7 @@ class Game(object):
 
     def main_loop(self):
         self.overheat_screen()
-        self.wiring_screen()
-        GPIO.digitalWrite(pinFan, 0)
-        pygame.mixer.music.play(-1)
-        pygame.mixer.music.set_volume(0.7)
+        self.wiring_screen()        
         self.order_beer_screen()
         while not GameState.end_game:
             while not GameState.start_screen:
@@ -771,7 +773,7 @@ class Game(object):
                 if self.win_round():
                     # TODO: send invaders solved signal
                     while True:
-                        pygame.time.delay(1000)
+                        self.control()
             self.splash_screen()
         pygame.quit()
 
