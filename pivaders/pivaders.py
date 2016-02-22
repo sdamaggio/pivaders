@@ -415,8 +415,6 @@ class Game(object):
         return wiring_solved
 
     def splash_screen(self): 
-        global credits
-        credits = 0
         while GameState.start_screen:
             self.kill_all()           
             self.screen.blit(self.intro_screen, [0, 0])
@@ -456,6 +454,8 @@ class Game(object):
             self.control()
 
     def wiring_screen(self):
+        global credits
+        credits = 0 #reset coin count, from now on any inserted coin will be counted
         while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
             self.screen.blit(self.wiring_image, [0, 0])
             pygame.display.flip()
