@@ -51,7 +51,7 @@
 
 
 import pygame, random, time
-import os, sys
+import os, sys, signal
 
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
@@ -184,6 +184,12 @@ GPIO.pinMode(pinInfinityMirrorOn, 0)
 GPIO.pinMode(pinReset, 0)
 print("pivaders: pin initialization complete!")
 
+
+def signal_handler(signal, frame):
+        print('You pressed Ctrl+C!')
+        sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 
@@ -331,7 +337,7 @@ class Game(object):
             os.system("sleep 10 && sudo python /home/pi/DEV/pivaders/pivaders/pivaders.py &")
             print("reboot sequence executed! good bye")
             #self.kill_all()
-            sys.exit()
+            sys.exit(0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 GameState.start_screen = False
@@ -422,12 +428,14 @@ class Game(object):
             #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
             font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
             
-            if credits >= 3:
-                self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
-                if GPIO.digitalRead(pinShoot) == 0:
-                    self.start_game()
-            elif GameState.has_played_once == False:
-                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+            if GameState.has_played_once == False:
+                if credits >= 3:
+                    self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
+                    if GPIO.digitalRead(pinShoot) == 0:
+                        self.start_game()
+                else:
+                    self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+
             elif GameState.has_played_once == True and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
                 text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
@@ -530,7 +538,6 @@ class Game(object):
                 pygame.display.flip()
                 pygame.time.delay(1000)
 
-
     def draw_joystick_digit_selector(self, digit_values, selected_digit):
         self.screen.fill(BLACK)
         text = self.game_font.render("INSERT CHEAT CODE", 1, WHITE)
@@ -561,6 +568,26 @@ class Game(object):
             text = font.render(str(digit_values[i]), 1, WHITE)
             self.screen.blit(text, (digit_x+3, digit_y+10))
         pygame.display.flip()
+
+    def portal_screen(self):
+        self.screen.blit(self.sys_overheat0, [0, 0])
+        pygame.display.flip()
+        pygame.time.delay(1000)
+        self.screen.blit(self.sys_overheat1, [0, 0])
+        pygame.display.flip()
+        pygame.time.delay(1000)
+
+        self.screen.fill((0, 0, 0))
+        font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
+        text = font.render("You think you won the battle??", 0, WHITE)
+        self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 200))
+
+        text = font.render("Enter the portal and meet us face to face!!", 0, WHITE)
+        self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
+
+        pygame.display.flip()
+        while True:
+            self.control()
 
     def start_game(self):        
         GameState.start_screen = False
@@ -770,13 +797,10 @@ class Game(object):
                         i.update()
                 if GameState.shoot_bullet:
                     self.make_bullet()
-                if self.win_round():
-                    # TODO: send invaders solved signal
-                    while True:
-                        self.control()
+                if self.win_round() and GameState.god_mode==True:
+                    self.portal_screen()
             self.splash_screen()
         pygame.quit()
-
 
 if __name__ == '__main__':
     pv = Game()
