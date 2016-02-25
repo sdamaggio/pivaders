@@ -275,6 +275,7 @@ class Game(object):
         self.clock = pygame.time.Clock()
         
         self.game_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 28)
+        self.game_font_medium = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
         self.intro_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 72)
         
         self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
@@ -527,7 +528,7 @@ class Game(object):
             
         else:
             for i in range(0,2):
-                # delete bottom part of the screen
+                # delete central part of the screen
                 pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, 470, 2000, 2000))
                 pygame.display.flip()
                 pygame.time.delay(200)
@@ -577,12 +578,12 @@ class Game(object):
         pygame.display.flip()
         pygame.time.delay(1000)
 
-        self.screen.fill((0, 0, 0))
+        self.screen.fill(BLACK)
         font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
-        text = font.render("You think you won the battle??", 0, WHITE)
+        text = font.render("You think you won the battle??", 1, WHITE)
         self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 200))
 
-        text = font.render("Enter the portal and meet us face to face!!", 0, WHITE)
+        text = font.render("Enter the portal and meet us face to face!!", 1, WHITE)
         self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
 
         pygame.display.flip()
@@ -717,13 +718,22 @@ class Game(object):
 
     def is_dead(self):
         if self.lives < 0:
-            self.screen.blit(self.game_font.render("The war is lost! You scored: " + str(self.score), 1, RED), (250, 15))
             GPIO.digitalWrite(pinFirstGameLost, 0);
             self.rounds_won = 0
             self.refresh_screen()
             self.level_up = 50
             self.explode = False
             self.alien_explode = False
+
+            self.screen.fill(BLACK)
+            pygame.draw.rect(self.screen, RED, pygame.Rect(170, 210, self.screen.get_width()-(2*170), self.screen.get_height()-(2*210)), 10)
+            text=self.game_font_medium.render("The war is lost!", 1, RED)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 240))
+
+            text=self.game_font_medium.render("You scored: " + str(self.score), 1, RED)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 320))
+
+            pygame.display.update(160, 200, self.screen.get_width()-(2*160), self.screen.get_height()-(2*200))
             pygame.time.delay(10000)
             return True
 
