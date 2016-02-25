@@ -277,6 +277,8 @@ class Game(object):
         self.game_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 28)
         self.game_font_medium = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
         self.intro_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 72)
+
+        self.console_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/UbuntuMono.ttf', 16)
         
         self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
         
@@ -438,8 +440,10 @@ class Game(object):
                     self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
 
             elif GameState.has_played_once == True and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
+                font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 36)    
                 text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
-                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 20))
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
+                pygame.display.flip()
                 if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
                     self.cheat_code_input_screen()           
 
@@ -471,7 +475,18 @@ class Game(object):
             pygame.time.delay(200)
             self.control()
         GPIO.digitalWrite(pinWiringTaskSolved, 0)
-        GPIO.digitalWrite(pinFan, 0)        
+        GPIO.digitalWrite(pinFan, 0)   
+
+    def reboot_screen(self):
+        for i in range(0,7):
+            self.screen.fill(BLACK)
+            pygame.display.flip()
+            pygame.time.delay(1000)
+
+            text = self.console_font.render("System rebooting", 1, RED)
+            self.screen.blit(text, (50, 50))
+            pygame.display.flip()
+            pygame.time.delay(1000)
 
     def order_beer_screen(self): # screen for bell bar task
         while GPIO.digitalRead(pinShoot) == 1 and GPIO.digitalRead(pinReady) == 1:                
@@ -579,11 +594,10 @@ class Game(object):
         pygame.time.delay(1000)
 
         self.screen.fill(BLACK)
-        font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
-        text = font.render("You think you won the battle??", 1, WHITE)
+        text = self.game_font_medium.render("You think you won the battle??", 1, WHITE)
         self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 200))
 
-        text = font.render("Enter the portal and meet us face to face!!", 1, WHITE)
+        text = self.game_font_medium.render("Enter the portal and meet us face to face!!", 1, WHITE)
         self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
 
         pygame.display.flip()
@@ -617,7 +631,7 @@ class Game(object):
 
     def refresh_scores(self):
         self.screen.blit(self.game_font.render("SCORE " + str(self.score), 1, WHITE), (10, 8))
-        self.screen.blit(self.game_font.render("LIVES " + str(self.lives + 1), 1, RED), (355, 575))
+        self.screen.blit(self.game_font.render("LIVES " + str(self.lives + 1), 1, RED), (670, 8))
         # self.screen.blit(self.game_font.render("CREDITS " + str(credits), 1, WHITE), (680, 8)) TODO: fix credits display or remove
 
     def alien_wave(self, speed):
@@ -789,7 +803,8 @@ class Game(object):
 
     def main_loop(self):
         self.overheat_screen()
-        self.wiring_screen()        
+        self.wiring_screen()  
+        self.reboot_screen()      
         self.order_beer_screen()
         while not GameState.end_game:
             while not GameState.start_screen:
