@@ -70,7 +70,7 @@ RES = (800, 600)
 rightPressed = False
 leftPressed = False
 
-credits = 3
+credits = 0
 # add this in /boot/config.txt (remove first # on every row)
 #
 # # uncomment to force a specific HDMI mode (this will force VGA)
@@ -156,7 +156,8 @@ GPIO.pullUpDnControl(pinWiringYellow, 1)
 ### coin counter signal interrupt sensing
 def coin_counted_event(channel):
     global credits
-    credits += 1    
+    credits += 1
+    print("coins="+str(credits))
 
 import RPi.GPIO as wiringpi
 wiringpi.setmode(wiringpi.BOARD)
@@ -456,7 +457,7 @@ class Game(object):
             self.control()
             self.clock.tick(self.refresh_rate / 2)
 
-    def overheat_screen(self):
+    def overheat_screen(self):        
         while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
             self.screen.blit(self.sys_overheat0, [0, 0])
             pygame.display.flip()
@@ -467,8 +468,6 @@ class Game(object):
             self.control()
 
     def wiring_screen(self):
-        global credits
-        credits = 0 #reset coin count, from now on any inserted coin will be counted
         while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
             self.screen.blit(self.wiring_image, [0, 0])
             pygame.display.flip()
@@ -478,7 +477,7 @@ class Game(object):
         GPIO.digitalWrite(pinFan, 0)   
 
     def reboot_screen(self):
-        for i in range(0,7):
+        for i in range(0,6):
             self.screen.fill(BLACK)
             pygame.display.flip()
             pygame.time.delay(1000)
@@ -487,6 +486,9 @@ class Game(object):
             self.screen.blit(text, (50, 50))
             pygame.display.flip()
             pygame.time.delay(1000)
+        self.screen.fill(BLACK)
+        pygame.display.flip()
+        pygame.time.delay(1000)
 
     def order_beer_screen(self): # screen for bell bar task
         while GPIO.digitalRead(pinShoot) == 1 and GPIO.digitalRead(pinReady) == 1:                
@@ -500,10 +502,6 @@ class Game(object):
             pygame.display.flip()
             pygame.time.delay(200)
             self.control()
-
-        # when bell task is solved play backgroun music
-        pygame.mixer.music.play(-1)
-        pygame.mixer.music.set_volume(0.7)
 
     def cheat_code_input_screen(self):
         digit_values=[0,0,0,0]
@@ -586,23 +584,17 @@ class Game(object):
         pygame.display.flip()
 
     def portal_screen(self):
-        self.screen.blit(self.sys_overheat0, [0, 0])
-        pygame.display.flip()
-        pygame.time.delay(1000)
-        self.screen.blit(self.sys_overheat1, [0, 0])
-        pygame.display.flip()
-        pygame.time.delay(1000)
+            pygame.mixer.music.stop();
+            self.screen.fill(BLACK)
+            text = self.game_font_medium.render("You think you won the battle??", 1, WHITE)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 200))
 
-        self.screen.fill(BLACK)
-        text = self.game_font_medium.render("You think you won the battle??", 1, WHITE)
-        self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 200))
+            text = self.game_font_medium.render("Enter the portal and meet us face to face!!", 1, WHITE)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
 
-        text = self.game_font_medium.render("Enter the portal and meet us face to face!!", 1, WHITE)
-        self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
-
-        pygame.display.flip()
-        while True:
-            self.control()
+            pygame.display.flip()
+            while True:
+                self.control()
 
     def start_game(self):        
         GameState.start_screen = False
@@ -614,6 +606,9 @@ class Game(object):
         self.make_player()
         self.make_defenses()
         self.alien_wave(0)
+
+        pygame.mixer.music.play(-1) #start the music
+        pygame.mixer.music.set_volume(0.7)
 
     def make_player(self):
         self.player = Player()
@@ -739,6 +734,8 @@ class Game(object):
             self.explode = False
             self.alien_explode = False
 
+            pygame.mixer.music.stop();
+
             self.screen.fill(BLACK)
             pygame.draw.rect(self.screen, RED, pygame.Rect(170, 210, self.screen.get_width()-(2*170), self.screen.get_height()-(2*210)), 10)
             text=self.game_font_medium.render("The war is lost!", 1, RED)
@@ -764,14 +761,15 @@ class Game(object):
 
     def win_round(self):
         if len(self.alien_group) < 1:
-            #self.rounds_won += 1         
-            GPIO.digitalWrite(pinSpaceInvadersSolved, 0)   
+            #self.rounds_won += 1                        
             font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 60)
             text = font.render("YOU WON!! Your score is " + str(self.score), 1, BLUE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 250))
             # self.screen.blit(self.game_font.render("YOU WON!! Your score is " + str(self.score) , 1, RED), (200, 15))
             self.refresh_screen()
-            pygame.time.delay(3000)
+            pygame.time.delay(7000)
+            GPIO.digitalWrite(pinSpaceInvadersSolved, 0)
+            pygame.mixer.music.stop();
             return True
 
     def next_round(self):
@@ -802,10 +800,11 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        self.overheat_screen()
-        self.wiring_screen()  
-        self.reboot_screen()      
-        self.order_beer_screen()
+        if GameState.god_mode == False:
+            self.overheat_screen()
+            self.wiring_screen()  
+            self.reboot_screen()      
+            self.order_beer_screen()
         while not GameState.end_game:
             while not GameState.start_screen:
                 GameState.game_time = pygame.time.get_ticks()
