@@ -321,7 +321,7 @@ class Game(object):
         self.alien_explode = False
         self.alien_explode_pos = 0
         pygame.mixer.music.load('/home/pi/DEV/pivaders/pivaders/data/sound/10_Arpanauts.ogg')
-        pygame.mixer.music.set_volume(0.7)
+        pygame.mixer.music.set_volume(1.0)
         self.bullet_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/shoot.wav')
         self.explosion_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
@@ -378,7 +378,7 @@ class Game(object):
                 start_game()
         if GameState.start_screen == False and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
             GameState.shoot_bullet = True
-            self.bullet_fx.play()
+            #self.bullet_fx.play()
 
     def player_explosion(self):
         if self.explode:
@@ -440,7 +440,7 @@ class Game(object):
                 else:
                     self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
 
-            elif GameState.has_played_once == True and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
+            elif GameState.has_played_once == True and GameState.god_mode==False and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
                 font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 36)    
                 text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
@@ -608,7 +608,7 @@ class Game(object):
         self.alien_wave(0)
 
         pygame.mixer.music.play(-1) #start the music
-        pygame.mixer.music.set_volume(0.7)
+        pygame.mixer.music.set_volume(1.0)
 
     def make_player(self):
         self.player = Player()
@@ -641,6 +641,7 @@ class Game(object):
 
     def make_bullet(self):
         if GameState.game_time - self.player.time > self.player.speed:
+            self.bullet_fx.play()
             if GameState.god_mode == False:
                 bullet = Ammo(BLUE, BULLET_SIZE)
                 bullet.vector = -1
