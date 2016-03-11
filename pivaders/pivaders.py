@@ -461,11 +461,14 @@ class Game(object):
         while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
             self.screen.blit(self.sys_overheat0, [0, 0])
             pygame.display.flip()
-            pygame.time.delay(1000)
+            for i in range(0,5):
+                pygame.time.delay(200)
+                self.control()
             self.screen.blit(self.sys_overheat1, [0, 0])
             pygame.display.flip()
-            pygame.time.delay(1000)
-            self.control()
+            for i in range(0,5):
+                pygame.time.delay(200)
+                self.control()
 
     def wiring_screen(self):
         while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
