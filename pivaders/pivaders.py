@@ -9,7 +9,7 @@
 # setterm -powersave off -blank 0
 
 # // Pin modes pinMode()
-# 
+#
 # #define INPUT            0
 # #define OUTPUT           1
 # #define PWM_OUTPUT       2
@@ -17,23 +17,23 @@
 # #define SOFT_PWM_OUTPUT      4
 # #define SOFT_TONE_OUTPUT     5
 # #define PWM_TONE_OUTPUT      6
-# 
+#
 # #define LOW          0
 # #define HIGH             1
-# 
+#
 # // Pull up/down/none pullUpDnControl()
-# 
+#
 # #define PUD_OFF          0
 # #define PUD_DOWN         1
 # #define PUD_UP           2
-# 
+#
 # // PWM
-# 
+#
 # #define PWM_MODE_MS     0
 # #define PWM_MODE_BAL        1
 #
 # // Interrupt levels
-# 
+#
 # #define INT_EDGE_SETUP      0
 # #define INT_EDGE_FALLING    1
 # #define INT_EDGE_RISING     2
@@ -71,6 +71,7 @@ rightPressed = False
 leftPressed = False
 
 credits = 0
+STEP=0
 # add this in /boot/config.txt (remove first # on every row)
 #
 # # uncomment to force a specific HDMI mode (this will force VGA)
@@ -121,7 +122,7 @@ pinInfinityMirrorOn = 15 # LOW is solved!
 pinReset = 13 #wire it with level converter
 
 #GPIO pin setup
-GPIO.pinMode(pinUp, 0) # 
+GPIO.pinMode(pinUp, 0) #
 GPIO.pullUpDnControl(pinUp, 2)
 GPIO.pinMode(pinRight, 0)
 GPIO.pullUpDnControl(pinRight, 2)
@@ -161,7 +162,7 @@ def coin_counted_event(channel):
 
 import RPi.GPIO as wiringpi
 wiringpi.setmode(wiringpi.BOARD)
-wiringpi.setup(pinCoinCounter, wiringpi.IN)  
+wiringpi.setup(pinCoinCounter, wiringpi.IN)
 wiringpi.add_event_detect(pinCoinCounter, wiringpi.FALLING, callback=coin_counted_event, bouncetime=800) # old value was 300
 
 GPIO.pinMode(pinLedStripRed, 1)
@@ -180,7 +181,7 @@ GPIO.pinMode(pinFirstGameLost, 1)
 GPIO.digitalWrite(pinFirstGameLost, 1)
 GPIO.pinMode(pinSpaceInvadersSolved, 1)
 GPIO.digitalWrite(pinSpaceInvadersSolved, 1)
-GPIO.pinMode(pinBellTaskSolved, 0) 
+GPIO.pinMode(pinBellTaskSolved, 0)
 GPIO.pinMode(pinInfinityMirrorOn, 0)
 GPIO.pinMode(pinReset, 0)
 print("pivaders: pin initialization complete!")
@@ -194,6 +195,8 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -202,11 +205,11 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = (RES[0] / 2) - (self.size[0] / 2)
         self.rect.y = 520
         self.travel = 7
-        self.speed = 1000 # NOTE: default 1000, 150 for god mode 
+        self.speed = 1000 # NOTE: default 1000, 150 for god mode
         self.time = pygame.time.get_ticks()
 
     def update(self):
-        if GameState.god_mode == True:
+        if STEP==7:
             self.speed = 150
         self.rect.x += GameState.vector * self.travel
         if self.rect.x < 0:
@@ -274,29 +277,29 @@ class Game(object):
         pygame.init()
         pygame.font.init()
         self.clock = pygame.time.Clock()
-        
+
         self.game_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 28)
         self.game_font_medium = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 48)
         self.intro_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 72)
 
         self.console_font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/UbuntuMono.ttf', 16)
-        
+
         self.screen = pygame.display.set_mode([RES[0], RES[1]], pygame.FULLSCREEN)
-        
+
         self.time = pygame.time.get_ticks()
         self.refresh_rate = 20
         self.rounds_won = 0
         self.level_up = 50
         self.score = 0
         self.lives = 10
-        
+
         self.player_group = pygame.sprite.Group()
         self.alien_group = pygame.sprite.Group()
         self.bullet_group = pygame.sprite.Group()
         self.missile_group = pygame.sprite.Group()
         self.barrier_group = pygame.sprite.Group()
         self.all_sprite_list = pygame.sprite.Group()
-        
+
         #load images and sounds
         self.sys_overheat0 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_0.png').convert_alpha()
         self.sys_overheat1 = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/system_overheating_1.png').convert_alpha()
@@ -308,7 +311,7 @@ class Game(object):
         pygame.display.set_caption('Pivaders - ESC to exit')
         pygame.mouse.set_visible(False)
         Alien.image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/Spaceship16.png').convert_alpha() #was without _alpha
-        Alien.image.set_colorkey(WHITE)        
+        Alien.image.set_colorkey(WHITE)
         Player.image = pygame.image.load('/home/pi/DEV/pivaders/pivaders/data/graphics/ship_sheet_final.png').convert_alpha()
         self.animate_right = False
         self.animate_left = False
@@ -326,13 +329,10 @@ class Game(object):
         self.explosion_fx = pygame.mixer.Sound('/home/pi/DEV/pivaders/pivaders/data/sound/invaderkilled.wav')
         self.explosion_fx.set_volume(0.5)
         self.explodey_alien = []
-        
+
         # initialize GameState vars
-        GameState.end_game = False
-        GameState.start_screen = True
         GameState.vector = 0
         GameState.shoot_bullet = False
-        GameState.god_mode = False 
         GameState.has_played_once = False
 
     def control(self):
@@ -340,43 +340,27 @@ class Game(object):
             print("about to exit")
             os.system("sleep 10 && sudo python /home/pi/DEV/pivaders/pivaders/pivaders.py &")
             print("reboot sequence executed! good bye")
-            #self.kill_all()
             sys.exit(0)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                GameState.start_screen = False
-                GameState.end_game = True
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                if GameState.start_screen:
-                    GameState.start_screen = False
-                    GameState.end_game = True
-                    self.kill_all()
-                else:
-                    GameState.start_screen = True
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_LEFT] or GPIO.digitalRead(pinLeft) == 0:
             self.animate_left = True
             self.animate_right = False
-            if GameState.god_mode == False:
+            if STEP!=7:
                 GameState.vector = -1
             else:
-                GameState.vector = -2                    
+                GameState.vector = -2
         elif self.keys[pygame.K_RIGHT] or GPIO.digitalRead(pinRight) == 0:
             self.animate_right = True
             self.animate_left = False
-            if GameState.god_mode == False:
+            if STEP!=7:
                 GameState.vector = 1
             else:
-                GameState.vector = 2 
-
+                GameState.vector = 2
         else:
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
-        if self.keys[pygame.K_SPACE]: 
-            if GameState.start_screen:
-                start_game()
-        if GameState.start_screen == False and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
+        if (STEP==5 or STEP==7) and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
             GameState.shoot_bullet = True
             #self.bullet_fx.play()
 
@@ -388,7 +372,7 @@ class Game(object):
                 self.screen.blit(self.explosion_image, [self.player.rect.x - 10, self.player.rect.y - 30])
             else:
                 self.explode = False
-                self.explode_pos = 0	
+                self.explode_pos = 0
 
     def alien_explosion(self):
         if self.alien_explode:
@@ -424,60 +408,59 @@ class Game(object):
         GPIO.digitalWrite(pinWiringPlugD, 0)
         return wiring_solved
 
-    def splash_screen(self): 
-        while GameState.start_screen:
-            self.kill_all()           
-            self.screen.blit(self.intro_screen, [0, 0])
-            #self.screen.blit(self.intro_font.render("PIVADERS", 1, WHITE), (265, 120))
-            #self.screen.blit(self.game_font.render("PRESS SPACE TO PLAY", 1, WHITE), (274, 191))
-            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
-            
-            if GameState.has_played_once == False:
-                if credits >= 3:
-                    self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
-                    if GPIO.digitalRead(pinShoot) == 0:
-                        self.start_game()
-                else:
-                    self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+    def splash_screen(self):
+        self.kill_all()
+        self.screen.blit(self.intro_screen, [0, 0])
+        font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
 
-            elif GameState.has_played_once == True and GameState.god_mode==False and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
-                font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 36)    
-                text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
-                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
-                pygame.display.flip()
-                if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
-                    self.cheat_code_input_screen()           
-
-            if GameState.god_mode == True:
+        if GameState.has_played_once == False:
+            if credits >= 3:
                 self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
                 if GPIO.digitalRead(pinShoot) == 0:
                     self.start_game()
+                    global STEP
+                    STEP=5
+                    print("step="+str(STEP))
+            else:
+                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
 
+        elif GameState.has_played_once == True and STEP!=7 and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
+            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 36)
+            text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
+            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
             pygame.display.flip()
-            self.control()
-            self.clock.tick(self.refresh_rate / 2)
+            if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
+                self.cheat_code_input_screen()
 
-    def overheat_screen(self):        
-        while GPIO.digitalRead(pinWiringDoorOcto) == 0: #while wiring lid is closed show the screen
-            self.screen.blit(self.sys_overheat0, [0, 0])
-            pygame.display.flip()
-            for i in range(0,5):
-                pygame.time.delay(200)
-                self.control()
-            self.screen.blit(self.sys_overheat1, [0, 0])
-            pygame.display.flip()
-            for i in range(0,5):
-                pygame.time.delay(200)
-                self.control()
+        if STEP==6:
+            self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
+            if GPIO.digitalRead(pinShoot) == 0:
+                self.start_game()
+                global STEP
+                STEP=7
+                print("step="+str(STEP))
 
-    def wiring_screen(self):
-        while self.is_wiring_solved() == False:       # while wiring is not solved, show the screen
-            self.screen.blit(self.wiring_image, [0, 0])
-            pygame.display.flip()
+        pygame.display.flip()
+        self.control()
+        self.clock.tick(self.refresh_rate / 2)
+
+    def overheat_screen(self):
+        self.screen.blit(self.sys_overheat0, [0, 0])
+        pygame.display.flip()
+        for i in range(0,5):
             pygame.time.delay(200)
             self.control()
-        GPIO.digitalWrite(pinWiringTaskSolved, 0)
-        GPIO.digitalWrite(pinFan, 0)   
+        self.screen.blit(self.sys_overheat1, [0, 0])
+        pygame.display.flip()
+        for i in range(0,5):
+            pygame.time.delay(200)
+            self.control()
+
+    def wiring_screen(self):
+        self.screen.blit(self.wiring_image, [0, 0])
+        pygame.display.flip()
+        pygame.time.delay(200)
+        self.control()
 
     def reboot_screen(self):
         for i in range(0,6):
@@ -493,18 +476,17 @@ class Game(object):
         pygame.display.flip()
         pygame.time.delay(1000)
 
-    def order_beer_screen(self): # screen for bell bar task
-        while GPIO.digitalRead(pinShoot) == 1 and GPIO.digitalRead(pinReady) == 1:                
-            self.screen.blit(self.not_cool_enough_image, [0, 0])
-            pygame.display.flip()
-            pygame.time.delay(200)
-            self.control()
+    def not_cool_enough_screen(self):
+        self.screen.blit(self.not_cool_enough_image, [0, 0])
+        pygame.display.flip()
+        pygame.time.delay(200)
+        self.control()
 
-        while GPIO.digitalRead(pinBellTaskSolved) == 1: # while beer is not ordered, show the screen
-            self.screen.blit(self.morse_code, [0, 0])
-            pygame.display.flip()
-            pygame.time.delay(200)
-            self.control()
+    def order_beer_screen(self): # screen for bell bar task
+        self.screen.blit(self.morse_code, [0, 0])
+        pygame.display.flip()
+        pygame.time.delay(200)
+        self.control()
 
     def cheat_code_input_screen(self):
         digit_values=[0,0,0,0]
@@ -523,11 +505,11 @@ class Game(object):
             elif GPIO.digitalRead(pinUp) == 0 and digit_values[selected_digit] < 9:
                 digit_values[selected_digit] += 1
             elif GPIO.digitalRead(pinDown) == 0 and digit_values[selected_digit] > 0:
-                digit_values[selected_digit] += -1                            
+                digit_values[selected_digit] += -1
             self.draw_joystick_digit_selector(digit_values, selected_digit)
             pygame.time.delay(100)
 
-        if digit_values == digit_solution:            
+        if digit_values == digit_solution:
             for i in range(0,5):
                 # delete bottom part of the screen
                 pygame.draw.rect(self.screen, BLACK, pygame.Rect(0, 470, 2000, 2000))
@@ -539,9 +521,9 @@ class Game(object):
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
                 pygame.display.flip()
                 pygame.time.delay(600)
+            global STEP
+            STEP=6
 
-            GameState.god_mode = True            
-            
         else:
             for i in range(0,2):
                 # delete central part of the screen
@@ -559,13 +541,13 @@ class Game(object):
         self.screen.fill(BLACK)
         text = self.game_font.render("INSERT CHEAT CODE", 1, WHITE)
         self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 70))
-            
+
         for i in range(0,4):
             digit_x = 80+(i*180)
             digit_y = 200
             digit_width = 100
             digit_height = 200
-            
+
             if i==selected_digit:
                 color = RED
             else:
@@ -575,7 +557,7 @@ class Game(object):
             pygame.draw.polygon(self.screen, color, [[digit_x, digit_y+digit_height + 10], [digit_x+digit_width, digit_y+digit_height + 10], [digit_x+(digit_width/2), digit_y+digit_height+60]])
 
             font = pygame.font.Font(None, 54)
-            if selected_digit == 4:                
+            if selected_digit == 4:
                 text = font.render("OK", 1, RED)
             else:
                 text = font.render("OK", 1, WHITE)
@@ -599,9 +581,8 @@ class Game(object):
             while True:
                 self.control()
 
-    def start_game(self):        
-        GameState.start_screen = False
-        if GameState.god_mode:
+    def start_game(self):
+        if STEP==7:
             self.lives = 98
         else:
             self.lives = 10
@@ -645,7 +626,7 @@ class Game(object):
     def make_bullet(self):
         if GameState.game_time - self.player.time > self.player.speed:
             self.bullet_fx.play()
-            if GameState.god_mode == False:
+            if STEP!=7:
                 bullet = Ammo(BLUE, BULLET_SIZE)
                 bullet.vector = -1
                 bullet.speed = 13
@@ -654,42 +635,24 @@ class Game(object):
                 self.bullet_group.add(bullet)
                 self.all_sprite_list.add(bullet)
                 self.player.time = GameState.game_time
-            else:	
+            else:
                 for cont in range(0, 11):
                     bullet = Ammo(YELLOW, BULLET_SIZE)
                     bullet.vector = -1
-                    bullet.speed = 26                  
+                    bullet.speed = 26
 
-                    #if cont == 0:
-                    #    bullet.rect.x = self.player.rect.x + 29 - 6
-                    #    bullet.rect.y = self.player.rect.y - 80			
-                    #if cont == 1:
-                    #    bullet.rect.x = self.player.rect.x + 29 + 6				
-                    #    bullet.rect.y = self.player.rect.y - 80
                     if cont == 2:
                         bullet.rect.x = self.player.rect.x + 29 - 6
-                        bullet.rect.y = self.player.rect.y - 40        
+                        bullet.rect.y = self.player.rect.y - 40
                     if cont == 3:
-                        bullet.rect.x = self.player.rect.x + 29 + 6          
+                        bullet.rect.x = self.player.rect.x + 29 + 6
                         bullet.rect.y = self.player.rect.y - 20
                     if cont == 4:
-                        bullet.rect.x = self.player.rect.x + 29 - 6            
-                        bullet.rect.y = self.player.rect.y 
+                        bullet.rect.x = self.player.rect.x + 29 - 6
+                        bullet.rect.y = self.player.rect.y
                     if cont == 5:
-                        bullet.rect.x = self.player.rect.x + 29 + 6         
+                        bullet.rect.x = self.player.rect.x + 29 + 6
                         bullet.rect.y = self.player.rect.y + 20
-                    #if cont == 6:
-                    #    bullet.rect.x = self.player.rect.x + 29 - 6          
-                    #    bullet.rect.y = self.player.rect.y + 40
-                    #if cont == 7:
-                    #    bullet.rect.x = self.player.rect.x + 29 + 6        
-                    #    bullet.rect.y = self.player.rect.y + 40
-                    #if cont == 8:
-                    #    bullet.rect.x = self.player.rect.x + 29 - 6          
-                    #    bullet.rect.y = self.player.rect.y + 80
-                    #if cont == 9:
-                    #    bullet.rect.x = self.player.rect.x + 29 + 6      
-                    #    bullet.rect.y = self.player.rect.y + 80
 
                     self.bullet_group.add(bullet)
                     self.all_sprite_list.add(bullet)
@@ -765,7 +728,7 @@ class Game(object):
 
     def win_round(self):
         if len(self.alien_group) < 1:
-            #self.rounds_won += 1                        
+            #self.rounds_won += 1
             font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 60)
             text = font.render("YOU WON!! Your score is " + str(self.score), 1, BLUE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 250))
@@ -804,54 +767,81 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        if GameState.god_mode == False:
+        if STEP==0:
             self.overheat_screen()
-            self.wiring_screen()  
-            self.reboot_screen()      
+            if GPIO.digitalRead(pinWiringDoorOcto) == 1: # if wiring lid is closed show the screen
+                global STEP
+                STEP=1
+                print("step="+str(STEP))
+
+        elif STEP==1:
+            self.wiring_screen()
+            if self.is_wiring_solved() == True:       # if wiring is not solved, show the screen
+                GPIO.digitalWrite(pinWiringTaskSolved, 0)
+                GPIO.digitalWrite(pinFan, 0)
+                self.reboot_screen()
+                global STEP
+                STEP=2
+                print("step="+str(STEP))
+
+        elif STEP==2:
+            self.not_cool_enough_screen()
+            if GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinReady) == 0:
+                global STEP
+                STEP=3
+                print("step="+str(STEP))
+
+        elif STEP==3:
             self.order_beer_screen()
-        while not GameState.end_game:
-            while not GameState.start_screen:
-                GameState.game_time = pygame.time.get_ticks()
-                GameState.alien_time = pygame.time.get_ticks()
-                self.control()
-                self.make_missile()
-                self.calc_collisions()
-                self.refresh_screen()
-                if self.is_dead() or self.defenses_breached():
-                    GameState.start_screen = True
-                    GameState.has_played_once = True
-                for actor in [self.player_group, self.bullet_group, self.alien_group, self.missile_group]:
-                    for i in actor:
-                        i.update()
-                if GameState.shoot_bullet:
-                    self.make_bullet()
-                if self.win_round() and GameState.god_mode==True:
-                    self.portal_screen()
+            if GPIO.digitalRead(pinBellTaskSolved) == 0: # if beer is not ordered, show the screen
+                global STEP
+                STEP=4
+                print("step="+str(STEP))
+
+        elif STEP==4:
             self.splash_screen()
-        pygame.quit()
+
+        elif STEP==5:
+            GameState.game_time = pygame.time.get_ticks()
+            GameState.alien_time = pygame.time.get_ticks()
+            self.control()
+            self.make_missile()
+            self.calc_collisions()
+            self.refresh_screen()
+            if self.is_dead() or self.defenses_breached():
+                GameState.has_played_once = True
+                global STEP
+                STEP=6
+                print("step="+str(STEP))
+            for actor in [self.player_group, self.bullet_group, self.alien_group, self.missile_group]:
+                for i in actor:
+                    i.update()
+            if GameState.shoot_bullet:
+                self.make_bullet()
+
+        elif STEP==6:
+            self.splash_screen()
+
+        elif STEP==7:
+            GameState.game_time = pygame.time.get_ticks()
+            GameState.alien_time = pygame.time.get_ticks()
+            self.control()
+            self.make_missile()
+            self.calc_collisions()
+            self.refresh_screen()
+            if self.is_dead() or self.defenses_breached():
+                GameState.has_played_once = True
+            for actor in [self.player_group, self.bullet_group, self.alien_group, self.missile_group]:
+                for i in actor:
+                    i.update()
+            if GameState.shoot_bullet:
+                self.make_bullet()
+            if self.win_round():
+                self.portal_screen()
+
 
 if __name__ == '__main__':
+#    start_questOverrideHttpHandler()
     pv = Game()
-    pv.main_loop()
-    
-
-
-# COIN TEST CODE, WORKING WITH MANUAL CONTACT BUT NOT COIN ACCEPTER
-#
-#import RPi.GPIO as GPIO
-#GPIO.setmode(GPIO.BOARD)
-#GPIO.setup(31, GPIO.IN, pull_up_down = GPIO.PUD_UP)
-#
-#def printFunction(channel):
-#    print("Button 1 pressed!")
-#
-#GPIO.add_event_detect(31, GPIO.BOTH, callback=printFunction, bouncetime=300)
-#
-#
-#while True:
-#    if 0==1:
-#        print("sbagliato")    
-#
-#GPIO.cleanup()
-#print("closing")
-#
+    while True:
+        pv.main_loop()
