@@ -197,6 +197,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -209,7 +210,7 @@ class Player(pygame.sprite.Sprite):
         self.time = pygame.time.get_ticks()
 
     def update(self):
-        if STEP==7:
+        if STEP==9:
             self.speed = 150
         self.rect.x += GameState.vector * self.travel
         if self.rect.x < 0:
@@ -345,14 +346,14 @@ class Game(object):
         if self.keys[pygame.K_LEFT] or GPIO.digitalRead(pinLeft) == 0:
             self.animate_left = True
             self.animate_right = False
-            if STEP!=7:
+            if STEP!=9:
                 GameState.vector = -1
             else:
                 GameState.vector = -2
         elif self.keys[pygame.K_RIGHT] or GPIO.digitalRead(pinRight) == 0:
             self.animate_right = True
             self.animate_left = False
-            if STEP!=7:
+            if STEP!=9:
                 GameState.vector = 1
             else:
                 GameState.vector = 2
@@ -360,7 +361,7 @@ class Game(object):
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
-        if (STEP==5 or STEP==7) and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
+        if (STEP==5 or STEP==9) and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
             GameState.shoot_bullet = True
             #self.bullet_fx.play()
 
@@ -407,42 +408,6 @@ class Game(object):
             wiring_solved = False
         GPIO.digitalWrite(pinWiringPlugD, 0)
         return wiring_solved
-
-    def splash_screen(self):
-        self.kill_all()
-        self.screen.blit(self.intro_screen, [0, 0])
-        font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
-
-        if GameState.has_played_once == False:
-            if credits >= 3:
-                self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
-                if GPIO.digitalRead(pinShoot) == 0:
-                    self.start_game()
-                    global STEP
-                    STEP=5
-                    print("step="+str(STEP))
-            else:
-                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
-
-        elif GameState.has_played_once == True and STEP!=7 and GPIO.digitalRead(pinInfinityMirrorOn) == 0:
-            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 36)
-            text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
-            self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
-            pygame.display.flip()
-            if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
-                self.cheat_code_input_screen()
-
-        if STEP==6:
-            self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
-            if GPIO.digitalRead(pinShoot) == 0:
-                self.start_game()
-                global STEP
-                STEP=7
-                print("step="+str(STEP))
-
-        pygame.display.flip()
-        self.control()
-        self.clock.tick(self.refresh_rate / 2)
 
     def overheat_screen(self):
         self.screen.blit(self.sys_overheat0, [0, 0])
@@ -522,7 +487,8 @@ class Game(object):
                 pygame.display.flip()
                 pygame.time.delay(600)
             global STEP
-            STEP=6
+            STEP=8
+            print("step="+str(STEP))
 
         else:
             for i in range(0,2):
@@ -582,7 +548,7 @@ class Game(object):
                 self.control()
 
     def start_game(self):
-        if STEP==7:
+        if STEP==9:
             self.lives = 98
         else:
             self.lives = 10
@@ -626,7 +592,7 @@ class Game(object):
     def make_bullet(self):
         if GameState.game_time - self.player.time > self.player.speed:
             self.bullet_fx.play()
-            if STEP!=7:
+            if STEP!=9:
                 bullet = Ammo(BLUE, BULLET_SIZE)
                 bullet.vector = -1
                 bullet.speed = 13
@@ -799,7 +765,23 @@ class Game(object):
                 print("step="+str(STEP))
 
         elif STEP==4:
-            self.splash_screen()
+            self.kill_all()
+            self.screen.blit(self.intro_screen, [0, 0])
+            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
+
+            if credits >= 3:
+                self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
+                if GPIO.digitalRead(pinShoot) == 0:
+                    self.start_game()
+                    global STEP
+                    STEP=5
+                    print("step="+str(STEP))
+            else:
+                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+
+            pygame.display.flip()
+            self.control()
+            self.clock.tick(self.refresh_rate / 2)
 
         elif STEP==5:
             GameState.game_time = pygame.time.get_ticks()
@@ -820,9 +802,44 @@ class Game(object):
                 self.make_bullet()
 
         elif STEP==6:
-            self.splash_screen()
+            self.kill_all()
+            self.screen.blit(self.intro_screen, [0, 0])
+            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
+
+            if GPIO.digitalRead(pinInfinityMirrorOn) == 0:
+                font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 36)
+                text = font.render("press Ready and Strike to enter a cheat code", 1, WHITE)
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
+                pygame.display.flip()
+                if GPIO.digitalRead(pinReady) == 0 and GPIO.digitalRead(pinShoot) == 0:
+                    global STEP
+                    STEP=7
+                    print("step="+str(STEP))
+
+            pygame.display.flip()
+            self.control()
+            self.clock.tick(self.refresh_rate / 2)
 
         elif STEP==7:
+            self.cheat_code_input_screen()
+
+        elif STEP==8:
+            self.kill_all()
+            self.screen.blit(self.intro_screen, [0, 0])
+            font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
+
+            self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
+            if GPIO.digitalRead(pinShoot) == 0:
+                self.start_game()
+                global STEP
+                STEP=9
+                print("step="+str(STEP))
+
+            pygame.display.flip()
+            self.control()
+            self.clock.tick(self.refresh_rate / 2)
+
+        elif STEP==9:
             GameState.game_time = pygame.time.get_ticks()
             GameState.alien_time = pygame.time.get_ticks()
             self.control()
@@ -841,7 +858,7 @@ class Game(object):
 
 
 if __name__ == '__main__':
-#    start_questOverrideHttpHandler()
+    #start_questOverrideHttpHandler()
     pv = Game()
     while True:
         pv.main_loop()
