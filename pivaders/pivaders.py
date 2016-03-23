@@ -72,6 +72,7 @@ leftPressed = False
 
 credits = 0
 STEP=0
+OVERRIDE=100
 # add this in /boot/config.txt (remove first # on every row)
 #
 # # uncomment to force a specific HDMI mode (this will force VGA)
@@ -193,6 +194,48 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
+
+
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import threading
+from urlparse import urlparse, parse_qs
+import time
+
+class questOverrideHttpHandler(BaseHTTPRequestHandler):
+
+    #Handler for the GET requests
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type','text/html')
+        self.end_headers()
+        # Send the html message
+        self.wfile.write("Hello World !")
+
+        query_components = parse_qs(urlparse(self.path).query)
+        ovr = query_components["override"]
+        print "override="
+        print(ovr)
+        global OVERRIDE
+        OVERRIDE=int(ovr[0])
+        return
+
+
+server = HTTPServer(('', 8080), questOverrideHttpHandler)
+print 'OK UNTIL NOW'
+thread = threading.Thread(target = server.serve_forever)
+print 'DAEMON STARTED'
+thread.daemon = True
+try:
+    thread.start()
+except KeyboardInterrupt:
+    server.shutdown()
+    sys.exit(0)
+
+#for i in range(10000):
+#        print "test %d \nstep=" % i
+#        print STEP
+#        time.sleep(1)
 
 
 
@@ -502,6 +545,9 @@ class Game(object):
                 self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 500))
                 pygame.display.flip()
                 pygame.time.delay(1000)
+            global STEP
+            STEP=6
+            print("step="+str(STEP))
 
     def draw_joystick_digit_selector(self, digit_values, selected_digit):
         self.screen.fill(BLACK)
@@ -733,6 +779,8 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
+        
+
         if STEP==0:
             self.overheat_screen()
             if GPIO.digitalRead(pinWiringDoorOcto) == 1: # if wiring lid is closed show the screen
@@ -854,11 +902,30 @@ class Game(object):
             if GameState.shoot_bullet:
                 self.make_bullet()
             if self.win_round():
-                self.portal_screen()
+                global STEP
+                STEP=10
+                print("step="+str(STEP))
+
+        elif STEP==10:
+            self.portal_screen()
+
+        if OVERRIDE!=100:
+            global STEP
+            global OVERRIDE
+            STEP=OVERRIDE
+            
+            if OVERRIDE==5 or OVERRIDE==9:
+                self.kill_all()
+                self.start_game()
+            else:
+                pygame.mixer.music.stop();
+
+            print "step overridden"
+            print "STEP=%d" % STEP
+            OVERRIDE=100
 
 
 if __name__ == '__main__':
-    #start_questOverrideHttpHandler()
     pv = Game()
     while True:
         pv.main_loop()
