@@ -1,5 +1,8 @@
 #!/usr/bin/env python2
 
+# to set step remotely use curl http://192.168.2.102:8080?override=4 where 4 is the destination step
+# to get step remotely use curl http://192.168.2.102:8080?override=100
+
 # TODO:
 # reset
 # change spaceship color when god mode is on
@@ -70,7 +73,7 @@ RES = (800, 600)
 rightPressed = False
 leftPressed = False
 
-credits = 0
+coins = 0
 STEP=0
 OVERRIDE=100
 # add this in /boot/config.txt (remove first # on every row)
@@ -157,36 +160,38 @@ GPIO.pullUpDnControl(pinWiringYellow, 1)
 
 ### coin counter signal interrupt sensing
 def coin_counted_event(channel):
-    global credits
-    credits += 1
-    print("coins="+str(credits))
+    global coins
+    coins += 1
+    print("coins="+str(coins))
 
 import RPi.GPIO as wiringpi
 wiringpi.setmode(wiringpi.BOARD)
 wiringpi.setup(pinCoinCounter, wiringpi.IN)
 wiringpi.add_event_detect(pinCoinCounter, wiringpi.FALLING, callback=coin_counted_event, bouncetime=800) # old value was 300
 
-GPIO.pinMode(pinLedStripRed, 1)
-GPIO.digitalWrite(pinLedStripRed, 0)
-GPIO.pinMode(pinLedStripGreen, 1)
-GPIO.digitalWrite(pinLedStripGreen, 0)
-GPIO.pinMode(pinLedStripBlue, 1)
-GPIO.digitalWrite(pinLedStripBlue, 0)
+def initCommunicationPins():
+    GPIO.pinMode(pinLedStripRed, 1)
+    GPIO.digitalWrite(pinLedStripRed, 0)
+    GPIO.pinMode(pinLedStripGreen, 1)
+    GPIO.digitalWrite(pinLedStripGreen, 0)
+    GPIO.pinMode(pinLedStripBlue, 1)
+    GPIO.digitalWrite(pinLedStripBlue, 0)
 
-GPIO.pinMode(pinFan, 1)
-GPIO.digitalWrite(pinFan, 1)
+    GPIO.pinMode(pinFan, 1)
+    GPIO.digitalWrite(pinFan, 1)
 
-GPIO.pinMode(pinWiringTaskSolved, 1)
-GPIO.digitalWrite(pinWiringTaskSolved, 1)
-GPIO.pinMode(pinFirstGameLost, 1)
-GPIO.digitalWrite(pinFirstGameLost, 1)
-GPIO.pinMode(pinSpaceInvadersSolved, 1)
-GPIO.digitalWrite(pinSpaceInvadersSolved, 1)
-GPIO.pinMode(pinBellTaskSolved, 0)
-GPIO.pinMode(pinInfinityMirrorOn, 0)
-GPIO.pinMode(pinReset, 0)
-print("pivaders: pin initialization complete!")
+    GPIO.pinMode(pinWiringTaskSolved, 1)
+    GPIO.digitalWrite(pinWiringTaskSolved, 1)
+    GPIO.pinMode(pinFirstGameLost, 1)
+    GPIO.digitalWrite(pinFirstGameLost, 1)
+    GPIO.pinMode(pinSpaceInvadersSolved, 1)
+    GPIO.digitalWrite(pinSpaceInvadersSolved, 1)
+    GPIO.pinMode(pinBellTaskSolved, 0)
+    GPIO.pinMode(pinInfinityMirrorOn, 0)
+    GPIO.pinMode(pinReset, 0)
+    print("pivaders: pin initialization complete!")
 
+initCommunicationPins()
 
 def signal_handler(signal, frame):
         print('You pressed Ctrl+C!')
@@ -196,8 +201,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 
-from SimpleHTTPServer import SimpleHTTPRequestHandler
+
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import SocketServer
 import threading
 from urlparse import urlparse, parse_qs
 import time
@@ -206,29 +212,48 @@ class questOverrideHttpHandler(BaseHTTPRequestHandler):
 
     #Handler for the GET requests
     def do_GET(self):
+        global OVERRIDE
+        global coins
         self.send_response(200)
         self.send_header('Content-type','text/html')
         self.end_headers()
-        # Send the html message
-        self.wfile.write("Hello World !")
 
         query_components = parse_qs(urlparse(self.path).query)
         ovr = query_components["override"]
         print "override="
         print(ovr)
-        global OVERRIDE
         OVERRIDE=int(ovr[0])
+
+        #override coins count
+        if 11 <= OVERRIDE <= 14:
+            global coins
+            coins=OVERRIDE-11
+            # Send the html message
+            self.wfile.write("arcade cabinet is on step="+str(STEP)+" coins="+str(coins)+"\n")
+        elif 0 <= OVERRIDE <= 10:
+            # Send the html message
+            self.wfile.write("arcade cabinet is on step="+str(OVERRIDE)+" coins="+str(coins)+"\n")
+        else:
+            self.wfile.write("arcade cabinet is on step="+str(STEP)+" coins="+str(coins)+"\n")
+            print "step=%d coins=%d" % (STEP, coins)
         return
 
 
-server = HTTPServer(('', 8080), questOverrideHttpHandler)
-print 'OK UNTIL NOW'
+#sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+#host, port = "localhost", 62000
+#SocketServer.TCPServer.allow_reuse_address = True
+#server = SocketServer.TCPServer((host, port), questOverrideHttpHandler)
+
+server = HTTPServer(('', 62000), questOverrideHttpHandler) #create the socket outside, set the reuse and feed it to the server
+
 thread = threading.Thread(target = server.serve_forever)
 print 'DAEMON STARTED'
 thread.daemon = True
 try:
     thread.start()
-except KeyboardInterrupt:
+except (KeyboardInterrupt, SystemExit):
+    #cleanup_stop_thread();
     server.shutdown()
     sys.exit(0)
 
@@ -381,10 +406,17 @@ class Game(object):
 
     def control(self):
         if GPIO.digitalRead(pinReset) == 0:
-            print("about to exit")
-            os.system("sleep 10 && sudo python /home/pi/DEV/pivaders/pivaders/pivaders.py &")
-            print("reboot sequence executed! good bye")
-            sys.exit(0)
+            global STEP
+            global coins
+            STEP=0
+            coins=0
+            initCommunicationPins()
+            pygame.mixer.music.stop();
+        #    server.shutdown()
+        #    print("about to exit")
+        #    os.system("sleep 10 && sudo python /home/pi/DEV/pivaders/pivaders/pivaders.py &")
+        #    print("reboot sequence executed! good bye")
+        #    sys.exit(0)
         self.keys = pygame.key.get_pressed()
         if self.keys[pygame.K_LEFT] or GPIO.digitalRead(pinLeft) == 0:
             self.animate_left = True
@@ -590,8 +622,7 @@ class Game(object):
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
 
             pygame.display.flip()
-            while True:
-                self.control()
+            self.control()
 
     def start_game(self):
         if STEP==9:
@@ -623,7 +654,7 @@ class Game(object):
     def refresh_scores(self):
         self.screen.blit(self.game_font.render("SCORE " + str(self.score), 1, WHITE), (10, 8))
         self.screen.blit(self.game_font.render("LIVES " + str(self.lives + 1), 1, RED), (670, 8))
-        # self.screen.blit(self.game_font.render("CREDITS " + str(credits), 1, WHITE), (680, 8)) TODO: fix credits display or remove
+        # self.screen.blit(self.game_font.render("coins " + str(coins), 1, WHITE), (680, 8)) TODO: fix coins display or remove
 
     def alien_wave(self, speed):
         for column in range(BARRIER_COLUMN):
@@ -779,7 +810,6 @@ class Game(object):
             self.explosion_fx.play()
 
     def main_loop(self):
-        
 
         if STEP==0:
             self.overheat_screen()
@@ -817,7 +847,7 @@ class Game(object):
             self.screen.blit(self.intro_screen, [0, 0])
             font = pygame.font.Font('/home/pi/DEV/pivaders/pivaders/data/Orbitracer.ttf', 26)
 
-            if credits >= 3:
+            if coins >= 3:
                 self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
                 if GPIO.digitalRead(pinShoot) == 0:
                     self.start_game()
@@ -825,7 +855,7 @@ class Game(object):
                     STEP=5
                     print("step="+str(STEP))
             else:
-                self.screen.blit(self.game_font.render("INSERT "+str(3-credits)+" COINS TO PLAY", 1, WHITE), (274, 500))
+                self.screen.blit(self.game_font.render("INSERT "+str(3-coins)+" COINS TO PLAY", 1, WHITE), (274, 500))
 
             pygame.display.flip()
             self.control()
@@ -912,16 +942,17 @@ class Game(object):
         if OVERRIDE!=100:
             global STEP
             global OVERRIDE
-            STEP=OVERRIDE
-            
+            if 0 <= OVERRIDE <=10:
+                STEP=OVERRIDE
+
             if OVERRIDE==5 or OVERRIDE==9:
                 self.kill_all()
                 self.start_game()
-            else:
+            elif OVERRIDE <=10:
                 pygame.mixer.music.stop();
 
             print "step overridden"
-            print "STEP=%d" % STEP
+            print "STEP=%d coins=%d" % (STEP, coins)
             OVERRIDE=100
 
 
