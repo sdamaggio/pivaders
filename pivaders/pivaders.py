@@ -229,12 +229,12 @@ class questOverrideHttpHandler(BaseHTTPRequestHandler):
             global coins
             coins=OVERRIDE-11
             # Send the html message
-            self.wfile.write("arcade cabinet is on step="+str(STEP)+" coins="+str(coins)+"\n")
+            self.wfile.write("arcade cabinet is on step="+str(STEP)+" inserted coins="+str(coins)+"\n")
         elif 0 <= OVERRIDE <= 10:
             # Send the html message
-            self.wfile.write("arcade cabinet is on step="+str(OVERRIDE)+" coins="+str(coins)+"\n")
+            self.wfile.write("arcade cabinet is on step="+str(OVERRIDE)+" inserted coins="+str(coins)+"\n")
         else:
-            self.wfile.write("arcade cabinet is on step="+str(STEP)+" coins="+str(coins)+"\n")
+            self.wfile.write("arcade cabinet is on step="+str(STEP)+" inserted coins="+str(coins)+"\n")
             print "step=%d coins=%d" % (STEP, coins)
         return
 
@@ -908,9 +908,9 @@ class Game(object):
 
             self.screen.blit(self.game_font.render("PRESS STRIKE! TO START", 1, WHITE), (274, 500))
             if GPIO.digitalRead(pinShoot) == 0:
-                self.start_game()
                 global STEP
                 STEP=9
+                self.start_game()
                 print("step="+str(STEP))
 
             pygame.display.flip()
