@@ -1,5 +1,7 @@
 #!/usr/bin/env python2
 
+# sftp://pi@192.168.2.102
+
 # to set step remotely use curl http://192.168.2.102:8080?override=4 where 4 is the destination step
 # to get step remotely use curl http://192.168.2.102:8080?override=100
 
@@ -436,7 +438,7 @@ class Game(object):
             GameState.vector = 0
             self.animate_right = False
             self.animate_left = False
-        if (STEP==5 or STEP==9) and (GPIO.digitalRead(pinShoot) == 0 or GPIO.digitalRead(pinUp) == 0):
+        if (STEP==5 or STEP==9) and GPIO.digitalRead(pinShoot) == 0:
             GameState.shoot_bullet = True
             #self.bullet_fx.play()
 
@@ -705,14 +707,19 @@ class Game(object):
     def make_missile(self):
         if len(self.alien_group):
             shoot = random.random()
-            if shoot <= 0.25: # def: 0.05
-                shooter = random.choice([
-                    alien for alien in self.alien_group])
+            shot_probability=0.25
+            if STEP==5:
+                shot_probability=(0.2+0.002*self.score)
+            if shoot <= shot_probability: # def: 0.05
+                shooter = random.choice([alien for alien in self.alien_group])
                 missile = Ammo(RED, MISSILE_SIZE)
                 missile.vector = 1
                 missile.rect.x = shooter.rect.x + 15
                 missile.rect.y = shooter.rect.y + 40
-                missile.speed = 18 # def: 10
+                if self.score<200:
+                    missile.speed = 18 # def: 10
+                else:
+                    missile.speed = 30 # def: 10
                 self.missile_group.add(missile)
                 self.all_sprite_list.add(missile)
 
