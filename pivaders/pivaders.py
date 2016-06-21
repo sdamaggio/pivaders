@@ -768,12 +768,18 @@ class Game(object):
     def defenses_breached(self):
         for alien in self.alien_group:
             if alien.rect.y > 410:
-                self.screen.blit(self.game_font.render("The aliens have breached Earth defenses!", 1, RED), (180, 15))
-                self.refresh_screen()
-                self.level_up = 50
-                self.explode = False
-                self.alien_explode = False
-                pygame.time.delay(3000)
+                pygame.mixer.music.stop();
+
+                self.screen.fill(BLACK)
+                pygame.draw.rect(self.screen, RED, pygame.Rect(170, 210, self.screen.get_width()-(2*170), self.screen.get_height()-(2*210)), 10)
+                text=self.game_font_medium.render("The war is lost!", 1, RED)
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 240))
+
+                text=self.game_font_medium.render("You scored: " + str(self.score), 1, RED)
+                self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 320))
+
+                pygame.display.update(160, 200, self.screen.get_width()-(2*160), self.screen.get_height()-(2*200))
+                pygame.time.delay(10000)
                 return True
 
     def win_round(self):
