@@ -620,7 +620,7 @@ class Game(object):
             text = self.game_font_medium.render("You think you won the battle??", 1, WHITE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 200))
 
-            text = self.game_font_medium.render("Enter the portal and meet us face to face!!", 1, WHITE)
+            text = self.game_font_medium.render("Follow the light and meet us face to face!!", 1, WHITE)
             self.screen.blit(text, (text.get_rect(centerx=self.screen.get_width()/2).x, 300))
 
             pygame.display.flip()
